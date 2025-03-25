@@ -6,9 +6,7 @@ class StorageUtil {
 
   // Save authentication token
   Future<void> saveToken(String token) async {
-    print("Saving token: $token");
     await _storage.write(key: _tokenKey, value: token);
-    print("saved token ${_tokenKey}");
   }
 
   // Get authentication token

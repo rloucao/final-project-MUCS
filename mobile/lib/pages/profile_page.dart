@@ -29,11 +29,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final profile = await _profileService.getUserProfile();
+      print("Profile data: $profile");
       setState(() {
         _profileData = profile;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print("Error loading profile: $e"); 
+      print(stackTrace);
       setState(() {
         _error = e.toString();
         _isLoading = false;

@@ -14,8 +14,9 @@ class ProfileService {
       throw Exception('No authentication token found');
     }
 
+    //TODO - Implement the getUserProfile method in the backend
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/api/profile'),
+      Uri.parse('${ApiConfig.baseUrl}/profile'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',

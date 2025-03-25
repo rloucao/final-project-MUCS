@@ -48,7 +48,7 @@ class _SignInPageState extends State<SignInPage> {
         // Navigate to profile page
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => ProfilePage()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

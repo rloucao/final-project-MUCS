@@ -69,19 +69,11 @@ class AuthService {
         }),
       );
 
-
-      print("Status Code: ${response.statusCode}");
-      print("Headers: ${response.headers}");
-      print("Raw Response: ${response.body}");
-
-
       final responseData = jsonDecode(response.body);
-
       if (response.statusCode == 200 && responseData['success'] == true) {
         // Save token
         if (responseData['session'] != null) {
           await _storageUtil.saveToken(responseData['session']);
-          print("Token: ${responseData['session']}");
         }
 
         return {
@@ -114,5 +106,27 @@ class AuthService {
     final token = await _storageUtil.getToken();
     return token != null;
   }
+
+  Future<Map<String, dynamic>> getUser() async {
+    final token = await _storageUtil.getToken();
+    if (token == null) {
+      throw Exception('No authentication token found');
+    }
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/api/user'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to load user');
+    }
+  }
 }
+
+
 

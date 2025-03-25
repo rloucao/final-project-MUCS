@@ -46,11 +46,10 @@ def register():
         if not name or not phone or not email or not pwd:
             return jsonify({"error" : "Name, phone, email and password are required"}, 400)
         
-        print("cona0")
 
+        # error here
         auth_res = supabase.auth.sign_up({"email": email, "password": pwd})
 
-        print("cona1")
 
         if "error" in auth_res:
             return jsonify({"error" : auth_res["error"]["message"]}, 401)
@@ -63,7 +62,6 @@ def register():
             "phone" : phone
         } 
 
-        print("cona1")
 
         db_res = supabase.table("users").insert(user_data).execute()
 

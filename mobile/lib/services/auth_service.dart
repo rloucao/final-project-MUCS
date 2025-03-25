@@ -14,6 +14,7 @@ class AuthService {
     required String phone,
   }) async {
     try {
+
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/register'),
         headers: {
@@ -74,6 +75,7 @@ class AuthService {
         // Save token
         if (responseData['session'] != null) {
           await _storageUtil.saveToken(responseData['session']);
+          await _storageUtil.saveUser(responseData['user']);
         }
 
         return {
@@ -107,6 +109,12 @@ class AuthService {
     return token != null;
   }
 
+  Future<Map<String,dynamic>?> getCurrentUser () async {
+    return await _storageUtil.getUser();
+  }
+
+
+  //No sense. Just store the user when he is logged in
   Future<Map<String, dynamic>> getUser() async {
     final token = await _storageUtil.getToken();
     if (token == null) {

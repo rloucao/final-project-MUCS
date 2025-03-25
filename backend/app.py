@@ -54,8 +54,10 @@ def register_user():
     full_name = data.get('full_name')
     phone = data.get('phone')
     
+    if not email or not password or not full_name or not phone:
+        return jsonify({"error": "Email, password, name and phone are required!"} , 400)
+
     try:
-        
         auth_response = supabase.auth.sign_up({
             "email": email,
             "password": password,
@@ -82,7 +84,7 @@ def register_user():
             "session": auth_response.session.access_token if auth_response.session else None
         })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+        return jsonify({"success": False, "error": str(e)}, 500)
 
 
 

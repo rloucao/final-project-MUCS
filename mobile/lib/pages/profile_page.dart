@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
@@ -14,7 +16,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   Map<String, dynamic>? _profileData;
   String? _error;
-
   @override
   void initState() {
     super.initState();
@@ -22,26 +23,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadProfile() async {
+    final user = await _authService.getCurrentUser();
     setState(() {
       _isLoading = true;
       _error = null;
+      _profileData = user;
+      _isLoading = false;
     });
 
-    try {
-      final profile = await _profileService.getUserProfile();
-      print("Profile data: $profile");
-      setState(() {
-        _profileData = profile;
-        _isLoading = false;
-      });
-    } catch (e, stackTrace) {
-      print("Error loading profile: $e"); 
-      print(stackTrace);
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+
+
   }
 
   Future<void> _logout() async {

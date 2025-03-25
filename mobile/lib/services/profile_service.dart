@@ -7,7 +7,9 @@ class ProfileService {
   final StorageUtil _storageUtil = StorageUtil();
 
   // Get user profile
-  Future<Map<String, dynamic>> getUserProfile() async {
+  Future<Map<String, dynamic>> getUserProfile({
+    required String id,
+}) async {
     final token = await _storageUtil.getToken();
 
     if (token == null) {
@@ -16,7 +18,7 @@ class ProfileService {
 
     //TODO - Implement the getUserProfile method in the backend
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/profile'),
+      Uri.parse('${ApiConfig.baseUrl}/profile?id=$id'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',

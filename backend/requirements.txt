@@ -2,4 +2,3 @@ flask
 supabase
 Flask-SQLAlchemy
 psycopg2
-

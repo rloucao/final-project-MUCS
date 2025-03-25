@@ -86,7 +86,6 @@ class _SignInPageState extends State<SignInPage> {
                     },
                   ),
 
-
                   // Password
                   SizedBox(height: 15),
                   TextFormField(
@@ -127,7 +126,6 @@ class _SignInPageState extends State<SignInPage> {
                     },
                   ),
 
-
                   // Login Button
                   SizedBox(height: 20),
                   ElevatedButton(
@@ -148,31 +146,44 @@ class _SignInPageState extends State<SignInPage> {
                     },
                     child: Text("Login", style: TextStyle(color: Colors.white)),
                   ),
-                  SizedBox(height: 20),
-
-                  // Sign Up Link
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => SignUpPage()),
-                      );
-                    },
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Text(
-                        "Already have an account?",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    )
-                  ),
                 ],
+              ),
+            ),
+          ),
+
+          // "Already have an account?" text positioned at the bottom
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SignUpPage()),
+                );
+              },
+              child: Container(
+                alignment: Alignment.center,
+                child: Text(
+                  "Already have an account?",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 3.0,
+                        color: Colors.black.withOpacity(0.7),
+                        offset: Offset(1.0, 1.0),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ],
       ),
-
     );
   }
 }

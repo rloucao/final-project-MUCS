@@ -38,11 +38,12 @@ class _SignUpPageState extends State<SignUpPage> {
             child: IconButton(onPressed: () {Navigator.pop(context);}, icon: Icon(Icons.arrow_back, color: Colors.white)),
           ),
           Padding(padding: EdgeInsets.all(16.0),
-          child: Form(
+          child: SingleChildScrollView(
+            child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: <Widget>[
                     Text("Let's get you set up!",
                     style: TextStyle(
                       fontSize: 24,
@@ -251,6 +252,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
             ),
+          ),
           ),
         ],
       ),

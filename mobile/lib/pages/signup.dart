@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/pages/login.dart';
+import '../services/auth_service.dart';
 
 class SignUpPage extends StatefulWidget{
   @override
@@ -15,6 +16,58 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _obscurePassword = true;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _registerUser() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await _authService.register(
+        email: _emailController.text,
+        password: _passwordController.text,
+        fullName: _nameController.text,
+        phone: _phoneController.text,
+      );
+
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration successful!')),
+        );
+
+        // Navigate to login page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => SignInPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'])),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
 
   @override
@@ -34,8 +87,8 @@ class _SignUpPageState extends State<SignUpPage> {
           ),
           Positioned(
             top: 16,
-            left: 16,
-            child: IconButton(onPressed: () {Navigator.pop(context);}, icon: Icon(Icons.arrow_back, color: Colors.white)),
+            left: 0,
+            child: IconButton(onPressed: () {Navigator.popAndPushNamed(context, '/');}, icon: Icon(Icons.arrow_back, color: Colors.white)),
           ),
           Padding(padding: EdgeInsets.all(16.0),
           child: SingleChildScrollView(
@@ -217,19 +270,10 @@ class _SignUpPageState extends State<SignUpPage> {
                         padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                         textStyle: TextStyle(fontSize: 18),
                       ),
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          print("Email: ${_emailController.text}");
-                          print("Password: ${_passwordController.text}");
-                          print("Name: ${_nameController.text}");
-                          print("Phone: ${_phoneController.text}");
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => SignInPage()),
-                          );
-                        }
-                      },
-                      child: Text("Register", style: TextStyle(color: Colors.white)),
+                      onPressed: _isLoading ? null : _registerUser,
+                      child: _isLoading
+                          ? CircularProgressIndicator(color: Colors.white)
+                          : Text("Register", style: TextStyle(color: Colors.white)),
                     ),
 
                     SizedBox(height: 15),

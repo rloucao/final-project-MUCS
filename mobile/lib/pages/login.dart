@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/pages/home.dart';
+import 'package:mobile/pages/profile_page.dart';
 import 'package:mobile/pages/signup.dart';
+import '../services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
   @override
@@ -12,6 +14,59 @@ class _SignInPageState extends State<SignInPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  //Error here
+  Future<void> _loginUser() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+
+      final result = await _authService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login successful!')),
+        );
+
+        //_authService.saveToken(result['session']);
+        // Navigate to profile page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'])),
+        );
+      }
+    } catch (e) {
+      print("Error: ${e.toString()}"); // Debugging
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +87,8 @@ class _SignInPageState extends State<SignInPage> {
           // AppBar Icon
           Positioned(
             top: 16,
-            left: 16,
-            child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
+            left: 0,
+            child: IconButton(onPressed: () {Navigator.popAndPushNamed(context, '/');}, icon: Icon(Icons.arrow_back, color: Colors.white)),
           ),
           // Form and other widgets
           Padding(
@@ -134,24 +184,17 @@ class _SignInPageState extends State<SignInPage> {
                       padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                       textStyle: TextStyle(fontSize: 18),
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        print("Email: ${_emailController.text}");
-                        print("Password: ${_passwordController.text}");
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => HomePage()),
-                        );
-                      }
-                    },
-                    child: Text("Login", style: TextStyle(color: Colors.white)),
+                    onPressed: _isLoading ? null : _loginUser,
+                    child: _isLoading
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text("Login", style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
             ),
           ),
 
-          // "Already have an account?" text positioned at the bottom
+
           Positioned(
             bottom: 30,
             left: 0,
@@ -173,7 +216,7 @@ class _SignInPageState extends State<SignInPage> {
                     shadows: [
                       Shadow(
                         blurRadius: 3.0,
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black,
                         offset: Offset(1.0, 1.0),
                       ),
                     ],

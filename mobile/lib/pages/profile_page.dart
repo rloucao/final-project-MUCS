@@ -1,9 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import 'package:mobile/components/snackbar.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
-import 'login.dart';
+import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -23,16 +22,13 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadProfile() async {
-    final user = await _authService.getCurrentUser();
+    final user = await _profileService.getUserProfile();
     setState(() {
       _isLoading = true;
       _error = null;
       _profileData = user;
       _isLoading = false;
     });
-
-
-
   }
 
   Future<void> _logout() async {
@@ -43,9 +39,7 @@ class _ProfilePageState extends State<ProfilePage> {
         MaterialPageRoute(builder: (context) => SignInPage()),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error logging out: ${e.toString()}')),
-      );
+      animatedSnackbar.show(context: context, message: e.toString(), type: SnackbarType.error);
     }
   }
 
@@ -111,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Card(
             elevation: 4,
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(10.0),
               child: Column(
                 children: [
                   _buildProfileItem('Full Name', _profileData?['full_name'] ?? 'Not provided'),
@@ -147,7 +141,7 @@ class _ProfilePageState extends State<ProfilePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            flex: 2,
+            flex: 1,
             child: Text(
               label,
               style: TextStyle(
@@ -157,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           Expanded(
-            flex: 3,
+            flex: 2,
             child: Text(
               value,
               style: TextStyle(

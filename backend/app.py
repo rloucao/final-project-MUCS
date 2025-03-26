@@ -64,7 +64,8 @@ def register_user():
             "options": {
                 "data": {
                     "full_name": full_name,
-                    "phone": phone
+                    "phone": phone,
+                    "email" : email
                 }
             }
         })

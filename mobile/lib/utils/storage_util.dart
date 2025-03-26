@@ -24,7 +24,7 @@ class StorageUtil {
 
   // Save user data
   Future<void> saveUser(Map<String, dynamic> user) async {
-    await _storage.write(key: _userKey, value: jsonEncode(user));
+    await _storage.write(key: _userKey, value: jsonEncode(user["user_metadata"]));
   }
 
   // Get user data

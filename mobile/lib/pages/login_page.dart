@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/pages/home.dart';
+import 'package:mobile/pages/home_page.dart';
 import 'package:mobile/pages/profile_page.dart';
-import 'package:mobile/pages/signup.dart';
+import 'package:mobile/pages/signup_page.dart';
 import '../services/auth_service.dart';
 import '../components/snackbar.dart';
+import '../components/page_transition_animation.dart';
 
 class SignInPage extends StatefulWidget {
   @override
@@ -25,7 +26,7 @@ class _SignInPageState extends State<SignInPage> {
     super.dispose();
   }
 
-  //Error here
+
   Future<void> _loginUser() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -40,21 +41,18 @@ class _SignInPageState extends State<SignInPage> {
       );
 
       if (result['success']) {
-        animatedSnackBar(context,
-            'Login Successful!',
-            Colors.green,
-            Icons.check_circle);
-
+        await PageTransitionAnimation.show(context: context, color: Colors.green);
+        animatedSnackbar.show(context: context, message: 'Login Successful', type: SnackbarType.success);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => ProfilePage()),
         );
       }
        else {
-         animatedSnackBar(context, result['message'], Colors.yellow, Icons.lightbulb_circle_rounded);
+        animatedSnackbar.show(context: context, message: result['message'], type: SnackbarType.info);
       }
     } catch (e) {
-      animatedSnackBar(context, e.toString(), Colors.red, Icons.error);
+      animatedSnackbar.show(context: context, message: e.toString(), type: SnackbarType.error);
     } finally {
       setState(() {
         _isLoading = false;
@@ -62,6 +60,14 @@ class _SignInPageState extends State<SignInPage> {
     }
   }
 
+  Future<void> _navigateToSignUp() async {
+    await PageTransitionAnimation.show(context: context, color: Colors.green);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SignUpPage()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -195,16 +201,11 @@ class _SignInPageState extends State<SignInPage> {
             left: 0,
             right: 0,
             child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SignUpPage()),
-                );
-              },
+              onTap: _navigateToSignUp,
               child: Container(
                 alignment: Alignment.center,
                 child: Text(
-                  "Already have an account?",
+                  "Don't have an account?",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/pages/login.dart';
 import '../services/auth_service.dart';
+import '../components/snackbar.dart';
 
 class SignUpPage extends StatefulWidget{
   @override
@@ -44,24 +45,20 @@ class _SignUpPageState extends State<SignUpPage> {
       );
 
       if (result['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration successful!')),
-        );
+        animatedSnackBar(context,
+            'Register Successful!',
+            Colors.green,
+            Icons.check_circle);
 
-        // Navigate to login page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => SignInPage()),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
+        animatedSnackBar(context, result['message'], Colors.yellow, Icons.lightbulb_circle_rounded);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      animatedSnackBar(context, e.toString(), Colors.red, Icons.error);
     } finally {
       setState(() {
         _isLoading = false;

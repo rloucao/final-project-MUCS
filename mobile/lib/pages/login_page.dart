@@ -3,6 +3,7 @@ import 'package:mobile/pages/home.dart';
 import 'package:mobile/pages/profile_page.dart';
 import 'package:mobile/pages/signup.dart';
 import '../services/auth_service.dart';
+import '../components/snackbar.dart';
 
 class SignInPage extends StatefulWidget {
   @override
@@ -33,33 +34,27 @@ class _SignInPageState extends State<SignInPage> {
     });
 
     try {
-
       final result = await _authService.login(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
       if (result['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login successful!')),
-        );
+        animatedSnackBar(context,
+            'Login Successful!',
+            Colors.green,
+            Icons.check_circle);
 
-        //_authService.saveToken(result['session']);
-        // Navigate to profile page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => ProfilePage()),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
+      }
+       else {
+         animatedSnackBar(context, result['message'], Colors.yellow, Icons.lightbulb_circle_rounded);
       }
     } catch (e) {
-      print("Error: ${e.toString()}"); // Debugging
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      animatedSnackBar(context, e.toString(), Colors.red, Icons.error);
     } finally {
       setState(() {
         _isLoading = false;

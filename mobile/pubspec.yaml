@@ -64,6 +64,7 @@ flutter:
    assets:
      - assets/green-plant-with-roots.jpg
      - assets/login-image.jpg
+     - assets/bg.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

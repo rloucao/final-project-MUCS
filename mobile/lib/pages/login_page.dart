@@ -62,7 +62,6 @@ class _SignInPageState extends State<SignInPage> {
 
   Future<void> _navigateToSignUp() async {
     await PageTransitionAnimation.show(context: context, color: Colors.green);
-
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => SignUpPage()),

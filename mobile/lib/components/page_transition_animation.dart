@@ -18,7 +18,8 @@ class PageTransitionAnimation extends StatefulWidget {
     required BuildContext context,
     Color color = Colors.green,
     double size = 100.0,
-    Duration duration = const Duration(milliseconds: 1500),
+    // Increased duration to 2 seconds
+    Duration duration = const Duration(milliseconds: 1000),
   }) async {
     final overlayState = Overlay.of(context);
     final overlayEntry = OverlayEntry(
@@ -52,13 +53,16 @@ class _PageTransitionAnimationState extends State<PageTransitionAnimation>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      // Increased duration to 2 seconds
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
+    // Use a custom curve to slow down the end of the animation
     _animation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeInOut,
+      // This curve slows down at the end
+      curve: Curves.easeOutQuad,
     );
 
     _controller.forward().then((_) {
@@ -124,16 +128,18 @@ class PlantPainter extends CustomPainter {
     final centerX = size.width / 2;
     final bottomY = size.height;
 
-    // Calculate how much of the plant to draw based on progress
-    final stemHeight = size.height * 0.7 * progress;
+    // Adjust the stem growth to be faster in the beginning
+    // This leaves more time for the flower at the end
+    final stemProgress = math.min(1.0, progress * 1.3);
+    final stemHeight = size.height * 0.7 * stemProgress;
 
     // Draw the stem
     final stemPath = Path();
     stemPath.moveTo(centerX, bottomY);
 
     // Create a slightly curved stem
-    final controlPoint1 = Offset(centerX - 10 * progress, bottomY - stemHeight * 0.5);
-    final controlPoint2 = Offset(centerX + 5 * progress, bottomY - stemHeight * 0.8);
+    final controlPoint1 = Offset(centerX - 10 * stemProgress, bottomY - stemHeight * 0.5);
+    final controlPoint2 = Offset(centerX + 5 * stemProgress, bottomY - stemHeight * 0.8);
     final endPoint = Offset(centerX, bottomY - stemHeight);
 
     stemPath.cubicTo(
@@ -145,12 +151,12 @@ class PlantPainter extends CustomPainter {
     canvas.drawPath(stemPath, stemPaint);
 
     // Only draw leaves and flower if progress is far enough
-    if (progress > 0.3) {
+    if (progress > 0.2) { // Start leaves earlier (was 0.3)
       // Draw leaves
-      final leafProgress = math.min(1.0, (progress - 0.3) / 0.4);
+      final leafProgress = math.min(1.0, (progress - 0.2) / 0.3); // Faster leaf growth
 
       // Left leaf
-      if (progress > 0.3) {
+      if (progress > 0.2) {
         final leafPath1 = Path();
         final leafStart = Offset(centerX, bottomY - stemHeight * 0.5);
         leafPath1.moveTo(leafStart.dx, leafStart.dy);
@@ -170,12 +176,12 @@ class PlantPainter extends CustomPainter {
       }
 
       // Right leaf
-      if (progress > 0.5) {
+      if (progress > 0.4) { // Start right leaf earlier (was 0.5)
         final leafPath2 = Path();
         final leafStart = Offset(centerX, bottomY - stemHeight * 0.7);
         leafPath2.moveTo(leafStart.dx, leafStart.dy);
 
-        final leafSize = size.width * 0.25 * math.min(1.0, (progress - 0.5) / 0.3);
+        final leafSize = size.width * 0.25 * math.min(1.0, (progress - 0.4) / 0.3);
         final leafControlPoint1 = Offset(leafStart.dx + leafSize * 0.8, leafStart.dy - leafSize * 0.2);
         final leafEndPoint1 = Offset(leafStart.dx + leafSize, leafStart.dy - leafSize * 0.4);
         final leafControlPoint2 = Offset(leafStart.dx + leafSize * 0.3, leafStart.dy - leafSize * 0.7);
@@ -190,53 +196,43 @@ class PlantPainter extends CustomPainter {
       }
     }
 
-    // Draw flower at the top if progress is high enough
-    if (progress > 0.7) {
-      final flowerProgress = math.min(1.0, (progress - 0.7) / 0.3);
+
+    if (progress > 0.6) {
+      final flowerProgress = math.min(1.0, (progress - 0.6) / 0.4);
       final flowerCenter = Offset(centerX, bottomY - stemHeight);
-      final flowerRadius = size.width * 0.15 * flowerProgress;
 
-      // Draw petals
-      for (int i = 0; i < 5; i++) {
-        final angle = i * math.pi * 2 / 5;
-        final petalPath = Path();
-        petalPath.moveTo(flowerCenter.dx, flowerCenter.dy);
+      // Draw flower petals - MUCH LARGER and SIMPLER
+      final petalCount = 5;
+      final petalSize = size.width * 0.3 * flowerProgress; // Larger petals
 
-        final petalEndPoint = Offset(
-            flowerCenter.dx + flowerRadius * 1.8 * math.cos(angle),
-            flowerCenter.dy + flowerRadius * 1.8 * math.sin(angle)
+      for (int i = 0; i < petalCount; i++) {
+        final angle = i * (2 * math.pi / petalCount);
+
+        // Use very bright, highly visible colors
+        final petalPaint = Paint()
+          ..color = Colors.purple.shade300 // More visible color
+          ..style = PaintingStyle.fill;
+
+        // Draw simple ellipse petals
+        canvas.save();
+        canvas.translate(flowerCenter.dx, flowerCenter.dy);
+        canvas.rotate(angle);
+
+        // Draw a simple oval for each petal
+        final petalRect = Rect.fromCenter(
+          center: Offset(petalSize * 0.7, 0),
+          width: petalSize * 1.4,
+          height: petalSize * 0.7,
         );
-
-        final controlPoint1 = Offset(
-            flowerCenter.dx + flowerRadius * 1.2 * math.cos(angle - 0.3),
-            flowerCenter.dy + flowerRadius * 1.2 * math.sin(angle - 0.3)
-        );
-
-        final controlPoint2 = Offset(
-            flowerCenter.dx + flowerRadius * 1.2 * math.cos(angle + 0.3),
-            flowerCenter.dy + flowerRadius * 1.2 * math.sin(angle + 0.3)
-        );
-
-        petalPath.cubicTo(
-            controlPoint1.dx, controlPoint1.dy,
-            controlPoint2.dx, controlPoint2.dy,
-            petalEndPoint.dx, petalEndPoint.dy
-        );
-
-        petalPath.cubicTo(
-            controlPoint2.dx, controlPoint2.dy,
-            controlPoint1.dx, controlPoint1.dy,
-            flowerCenter.dx, flowerCenter.dy
-        );
-
-        canvas.drawPath(petalPath, flowerPaint);
+        canvas.drawOval(petalRect, petalPaint);
+        canvas.restore();
       }
 
-      // Draw flower center
+      // Draw flower center - larger and brighter
       final centerPaint = Paint()
         ..color = Colors.yellow
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(flowerCenter, flowerRadius * 0.5, centerPaint);
+      canvas.drawCircle(flowerCenter, petalSize * 0.4, centerPaint);
     }
   }
 

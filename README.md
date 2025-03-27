@@ -18,11 +18,26 @@ This project demonstrates the integration between hardware and software componen
 - Secure API endpoints for device communication
 - Responsive design for multiple device types
 
+## ᯓ🏃🏻‍♀️‍➡️ How to run
+
+### 📱 Mobile
+
+ - With everything change made in the `pubspec.yaml`, the following command must be run `flutter pub get`
+ - `flutter run`
+
+### 🖥 Backend
+
+```
+cd .\backend\
+.\.venv\Scripts\activate # activate virtual environment
+python .\app.py
+```
+
 ## 🛠️ Technologies Used
 
 ### Backend
 
-- To be defined
+- 🐍 Python - Flask
 - 💾 PostgreSQL - Data storage/User authentication - Supabase
 - 🔄 RESTful API - Communication protocol
 
@@ -50,4 +65,41 @@ This project demonstrates the integration between hardware and software componen
 🔧  Deployment not configured yet
 
 ## 📊 Project Structure
-
+```bash
+arduino
+└── main
+    └── main.ino
+backend
+├── __pycache__
+├── .venv
+├── instance
+├── static
+├── templates
+├── tests
+├── .env
+├── .gitignore
+├── app.py
+├── config.py
+└── requirements.txt
+mobile
+├── .dart_tool
+├── android
+├── assets
+├── build
+├── ios
+├── lib
+├── linux
+├── macos
+├── test
+├── web
+├── windows
+├── .flutter-plugins
+├── .flutter-plugins-dependencies
+├── .gitignore
+├── .metadata
+├── analysis_options.yaml
+├── mobile.iml
+├── pubspec.lock
+├── pubspec.yaml
+└── README.md
+```

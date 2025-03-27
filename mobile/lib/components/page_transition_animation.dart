@@ -13,7 +13,7 @@ class PageTransitionAnimation extends StatefulWidget {
     this.onComplete,
   }) : super(key: key);
 
-  /// Static method to show the animation as an overlay
+
   static Future<void> show({
     required BuildContext context,
     Color color = Colors.green,

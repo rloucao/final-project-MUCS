@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/components/snackbar.dart';
-import '../services/auth_service.dart';
-import '../services/profile_service.dart';
-import 'login_page.dart';
+import '../../main.dart';
+import '../../services/auth_service.dart';
+import '../../services/profile_service.dart';
+import '../login_page.dart';
+
 
 class ProfilePage extends StatefulWidget {
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
@@ -20,6 +23,8 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _loadProfile();
   }
+  var auth = AuthService();
+
 
   Future<void> _loadProfile() async {
     final user = await _profileService.getUserProfile();
@@ -36,7 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
       await _authService.logout();
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => SignInPage()),
+        MaterialPageRoute(builder: (context) => MyApp()),
       );
     } catch (e) {
       animatedSnackbar.show(context: context, message: e.toString(), type: SnackbarType.error);
@@ -47,11 +52,19 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: _logout,
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              auth.logout().then((_) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyApp()),
+                );
+              }).catchError((error) {
+                animatedSnackbar.show(message: "Error logging out", type: SnackbarType.error, context: context);
+              });
+            },
           ),
         ],
       ),

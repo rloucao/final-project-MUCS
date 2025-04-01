@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/pages/home_page.dart';
-import 'package:mobile/pages/profile_page.dart';
+import 'package:mobile/pages/authenticated/auth_home_page.dart';
 import 'package:mobile/pages/signup_page.dart';
 import '../services/auth_service.dart';
 import '../components/snackbar.dart';
@@ -45,7 +44,7 @@ class _SignInPageState extends State<SignInPage> {
         animatedSnackbar.show(context: context, message: 'Login Successful', type: SnackbarType.success);
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => ProfilePage()),
+          MaterialPageRoute(builder: (context) => AuthenticatedHome()),
         );
       }
        else {

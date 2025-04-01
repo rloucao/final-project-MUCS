@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import '../utils/storage_util.dart';
 import '../utils/api_config.dart';
 
-class AuthService {
+class AuthService extends ChangeNotifier{
   final StorageUtil _storageUtil = StorageUtil();
+  bool isAuthenticated = false;
 
   // Register a new user
   Future<Map<String, dynamic>> register({
@@ -76,9 +78,9 @@ class AuthService {
         if (responseData['session'] != null) {
           await _storageUtil.saveToken(responseData['session']);
           await _storageUtil.saveUser(responseData['user']);
-          var user = await _storageUtil.getUser();
-          print("user: ${jsonEncode(user)}");
         }
+
+        isAuthenticated = true;
 
         return {
           'success': true,
@@ -103,12 +105,7 @@ class AuthService {
   // Logout user
   Future<void> logout() async {
     await _storageUtil.deleteToken();
-  }
-
-  // Check if user is logged in
-  Future<bool> isLoggedIn() async {
-    final token = await _storageUtil.getToken();
-    return token != null;
+    isAuthenticated = false;
   }
 
 }

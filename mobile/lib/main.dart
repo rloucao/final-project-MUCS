@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/pages/authenticated/auth_home_page.dart';
 import 'package:mobile/pages/login_page.dart';
 import 'package:mobile/pages/signup_page.dart';
+import 'package:mobile/services/auth_service.dart';
+import 'package:provider/provider.dart';
 
 
 void main() {
-  runApp(MyApp());
+  runApp(
+      ChangeNotifierProvider(
+        create: (_) =>  AuthService(),
+        child: const MyApp(),
+      )
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -18,12 +26,20 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.greenAccent),
       ),
-      home: HomePage(),
+      home: Consumer<AuthService>(
+        builder: (context, authService, _) {
+          return authService.isAuthenticated
+              ? const AuthenticatedHome()
+              : const HomePage();
+        },
+      ),
     );
   }
 }
 
 class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     // Get screen dimensions
@@ -49,11 +65,11 @@ class HomePage extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(screenSize.width * 0.05),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),
@@ -86,7 +102,7 @@ class HomePage extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (context) => SignInPage()),
                           );
@@ -111,9 +127,9 @@ class HomePage extends StatelessWidget {
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => SignUpPage()),
+                            MaterialPageRoute(builder: (context) => SignUpPage()                            ),
                           );
                         },
                         style: OutlinedButton.styleFrom(

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/services/auth_service.dart';
 
-import '../services/profile_service.dart';
+import '../../services/profile_service.dart';
 
-class HomePage extends StatefulWidget{
+class LandingPage extends StatefulWidget{
+  const LandingPage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 
-class _HomePageState extends State<HomePage>{
+class _HomePageState extends State<LandingPage>{
   final AuthService _authService = AuthService();
   final ProfileService _profileService = ProfileService();
   bool _isLoading = true;
@@ -32,22 +34,28 @@ class _HomePageState extends State<HomePage>{
     });
   }
 
-  Future<String?> _getProfileName() async {
+    Future<String?> _getProfileName() async {
     final user = await _profileService.getUserProfile();
     String? name = user?['full_name'].toString().split(' ')[0];
     return name;
+  }
+  int _selectedIndex = 0;
+
+  void _onItemPressed(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Good to see you again, $_getProfileName')),
       body: Center(
         child: Container(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Welcome to the Home Page'),
+              Text('Welcome to the Home Page\n $_getProfileName'),
 
             ],
           ),

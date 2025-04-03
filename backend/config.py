@@ -6,4 +6,3 @@ load_dotenv()
 class Config:
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_KEY = os.getenv("SUPABASE_PUBLIC")
-    SUPABASE_URI = os.getenv("SUPABASE_URI")

@@ -160,7 +160,7 @@ class _MapPageState extends State<MapPage> {
       });
 
       setState(() {
-        // This empty setState will trigger a rebuild
+        _mapKey = UniqueKey(); // Force complete rebuild of the map widget
       });
     } catch (e) {
       print('Error loading markers: $e');

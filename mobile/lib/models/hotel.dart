@@ -62,13 +62,4 @@ class Hotel {
     );
   }
 
-  // Format distance for display
-  String get formattedDistance {
-    if (distanceFromUser == null) {
-      return 'Unknown';
-    } else {
-      return '${(distanceFromUser! / 1000).toStringAsFixed(1)} km';
-    }
-  }
-
 }

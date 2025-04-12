@@ -4,6 +4,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:mobile/models/hotel.dart';
 import 'package:mobile/services/hotel_data_service.dart';
 import 'package:mobile/pages/authenticated/map_page.dart';
+import 'package:mobile/components/hotel_card.dart';
+import 'package:provider/provider.dart';
+import '../../providers/selected_hotel_provider.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({Key? key}) : super(key: key);
@@ -52,6 +55,8 @@ class _HomePageState extends State<LandingPage> {
       );
 
       _currentPosition = position;
+      print(position.latitude);
+      print(position.longitude);
 
       // Calculate distance for each hotel
       for (var hotel in _hotels) {
@@ -60,9 +65,10 @@ class _HomePageState extends State<LandingPage> {
 
       // Sort hotels by distance
       _filteredHotels = List.from(_hotels);
-      _filteredHotels.sort((a, b) =>
-          (a.distanceFromUser ?? double.infinity)
-              .compareTo(b.distanceFromUser ?? double.infinity)
+      _filteredHotels.sort(
+        (a, b) => (a.distanceFromUser ?? double.infinity).compareTo(
+          b.distanceFromUser ?? double.infinity,
+        ),
       );
 
       setState(() {
@@ -73,9 +79,9 @@ class _HomePageState extends State<LandingPage> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error getting location: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
     }
   }
 
@@ -89,141 +95,129 @@ class _HomePageState extends State<LandingPage> {
   void _navigateToMapPage(Hotel hotel) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => MapPage(hotel: hotel),
-      ),
+      MaterialPageRoute(builder: (context) => MapPage(hotel: hotel)),
     );
   }
 
-  @override
+  void _setHotel(Hotel hotel) {
+    context.read<SelectedHotelProvider>().setHotel(hotel);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Hotels'),
-        actions: [
-          // Location filter button
-          _isLoading
-              ? Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            ),
-          )
-              : IconButton(
-            icon: Icon(
-              _isLocationFiltered
-                  ? Icons.location_on
-                  : Icons.location_searching,
-            ),
-            tooltip: _isLocationFiltered
-                ? 'Reset filter'
-                : 'Show nearest hotels',
-            onPressed: _isLocationFiltered
-                ? _resetFilter
-                : _getCurrentLocation,
+    return Container(
+      // This container covers the entire screen
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/plant_background.png'),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(0.35), // Adjust opacity for readability
+            BlendMode.lighten,
           ),
-        ],
-      ),
-      body: _filteredHotels.isEmpty
-          ? Center(child: Text('No hotels available'))
-          : Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.8,
-          ),
-          itemCount: _filteredHotels.length,
-          itemBuilder: (context, index) {
-            final hotel = _filteredHotels[index];
-            return _buildHotelCard(hotel);
-          },
         ),
       ),
-    );
-  }
-
-  Widget _buildHotelCard(Hotel hotel) {
-    return GestureDetector(
-      onTap: () => _navigateToMapPage(hotel),
-      child: Card(
-        elevation: 4,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hotel Image
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.asset(
-                  hotel.imagePath,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Image.asset(
-                      'assets/defaultHotel.jpg',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    );
-                  },
+      child: Scaffold(
+        // Make the scaffold background transparent
+        backgroundColor: Colors.transparent,
+        // Make the app bar transparent with a slight gradient for readability
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'Hotels',
+            style: TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3.0,
+                  color: Colors.white.withOpacity(0.5),
                 ),
-              ),
+              ],
             ),
-            // Hotel Info
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    hotel.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (hotel.chain != null)
-                    Text(
-                      hotel.chain!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.map,
-                        size: 16,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        '${hotel.floorPlanIds.length} floor plans',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
+          ),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.2),
+                  Colors.transparent,
                 ],
               ),
             ),
+          ),
+          actions: [
+            // Location filter button
+            _isLoading
+                ? Container(
+              margin: EdgeInsets.only(right: 8),
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.black,
+                strokeWidth: 3,
+              ),
+            )
+                : IconButton(
+              icon: Icon(
+                _isLocationFiltered
+                    ? Icons.location_on
+                    : Icons.location_searching,
+                color: Colors.black87, // Match title color
+              ),
+              tooltip: _isLocationFiltered
+                  ? 'Reset filter'
+                  : 'Show nearest hotels',
+              onPressed:
+              _isLocationFiltered ? _resetFilter : _getCurrentLocation,
+            ),
           ],
+        ),
+        // The body remains mostly the same
+        body: _filteredHotels.isEmpty
+            ? Center(
+          child: Text(
+            'No hotels available',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3.0,
+                  color: Colors.white.withOpacity(0.5),
+                ),
+              ],
+            ),
+          ),
+        )
+            : Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
+            ),
+            itemCount: _filteredHotels.length,
+            itemBuilder: (context, index) {
+              final hotel = _filteredHotels[index];
+              return HotelCard(
+                hotel: hotel,
+                showDistance: _isLocationFiltered,
+                onTap: () {
+                  _setHotel(hotel);
+                  _navigateToMapPage(hotel);
+                },
+              );
+            },
+          ),
         ),
       ),
     );

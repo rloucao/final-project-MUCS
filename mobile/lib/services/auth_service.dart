@@ -8,6 +8,12 @@ class AuthService extends ChangeNotifier{
   final StorageUtil _storageUtil = StorageUtil();
   bool isAuthenticated = false;
 
+  void autoLogin() {
+    // Set your auth state to "authenticated"
+    isAuthenticated = true;
+    notifyListeners();
+  }
+
   // Register a new user
   Future<Map<String, dynamic>> register({
     required String email,

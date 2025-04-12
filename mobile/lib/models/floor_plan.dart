@@ -4,14 +4,14 @@ class FloorPlan {
   final String hotelId;
   final String name;
   final int? floorNumber;
-  final String svgData;
+  final String svgImagePath;
 
   FloorPlan({
     required this.id,
     required this.hotelId,
     required this.name,
     this.floorNumber,
-    required this.svgData,
+    required this.svgImagePath,
   });
 
   factory FloorPlan.fromJson(Map<String, dynamic> json) {
@@ -20,7 +20,7 @@ class FloorPlan {
       hotelId: json['hotel_id'],
       name: json['name'],
       floorNumber: json['floor_number'],
-      svgData: json['svg_data'],
+      svgImagePath: json['svg_data'],
     );
   }
 
@@ -30,7 +30,7 @@ class FloorPlan {
       'hotel_id': hotelId,
       'name': name,
       'floor_number': floorNumber,
-      'svg_data': svgData,
+      'svg_data': svgImagePath,
     };
   }
 }

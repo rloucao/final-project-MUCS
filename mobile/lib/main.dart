@@ -2,16 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:mobile/pages/authenticated/auth_home_page.dart';
 import 'package:mobile/pages/login_page.dart';
 import 'package:mobile/pages/signup_page.dart';
+import 'package:mobile/providers/selected_hotel_provider.dart';
 import 'package:mobile/services/auth_service.dart';
 import 'package:provider/provider.dart';
 
 
 void main() {
   runApp(
-      ChangeNotifierProvider(
-        create: (_) =>  AuthService(),
-        child: const MyApp(),
-      )
+    MultiProvider(
+      providers: [
+        // Auth state (with auto-login)
+        ChangeNotifierProvider(create: (_) => AuthService()..autoLogin()),
+        // Other providers (e.g., hotel selection)
+        ChangeNotifierProvider(create: (_) => SelectedHotelProvider()),
+        // Add more providers here as needed
+      ],
+      child: const MyApp(),
+    ),
   );
 }
 
@@ -28,9 +35,10 @@ class MyApp extends StatelessWidget {
       ),
       home: Consumer<AuthService>(
         builder: (context, authService, _) {
-          return authService.isAuthenticated
-              ? const AuthenticatedHome()
-              : const HomePage();
+          return const AuthenticatedHome();
+         // return authService.isAuthenticated
+         //  ? const AuthenticatedHome()
+         //      : const HomePage();
         },
       ),
     );

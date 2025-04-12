@@ -47,6 +47,8 @@ class _MapPageState extends State<MapPage> {
   // Status message to display at the bottom
   String _statusMessage = '';
 
+  Key _mapKey = UniqueKey();
+
   @override
   void initState() {
     super.initState();
@@ -197,6 +199,7 @@ class _MapPageState extends State<MapPage> {
     await _saveMarkers();
   }
 
+
   // Handle floor item tap
   Future<void> _handleFloorItemTap(FloorItem item) async {
     if (_selectedHotel == null) return;
@@ -248,6 +251,9 @@ class _MapPageState extends State<MapPage> {
     }
 
     await _saveMarkers();
+    setState(() {
+      _mapKey = UniqueKey(); // Force complete rebuild of the map widget
+    });
   }
 
   // Handle marker tap
@@ -274,6 +280,9 @@ class _MapPageState extends State<MapPage> {
     });
 
     await _saveMarkers();
+    setState(() {
+      _mapKey = UniqueKey(); // Force complete rebuild of the map widget
+    });
   }
 
   @override
@@ -467,6 +476,7 @@ class _MapPageState extends State<MapPage> {
     return Stack(
       children: [
         FloorMapWidget(
+          key: _mapKey, // Add this key parameter
           _svgContent,
           // Combine room items and marker indicators
           [...floorItemWidgets, ...markerWidgets],

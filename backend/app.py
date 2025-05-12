@@ -35,6 +35,11 @@ def login():
                 "created_at": auth_response.user.created_at,
                 "user_metadata": auth_response.user.user_metadata
             }
+
+            # get user information from supabase
+            user_info = supabase.table("profiles").select("*").eq("id", auth_response.user.id).execute()
+            user_data["user_metadata"] = user_info.data[0]
+            print(user_data)
         
         return jsonify({
             "success": True, 
@@ -86,6 +91,21 @@ def register_user():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}, 500)
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    try:
+        supabase.auth.sign_out()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}, 500)
+
+
+@app.route('/sync_data', methods=['POST'])
+def sync_data():
+    data = request.json
+    print(data)
+    return jsonify({"success": True})
 
 
 

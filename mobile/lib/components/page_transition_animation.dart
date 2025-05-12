@@ -210,7 +210,7 @@ class PlantPainter extends CustomPainter {
 
         // Use very bright, highly visible colors
         final petalPaint = Paint()
-          ..color = Colors.purple.shade300 // More visible color
+          ..color = Colors.yellow.shade300 // More visible color
           ..style = PaintingStyle.fill;
 
         // Draw simple ellipse petals
@@ -230,7 +230,7 @@ class PlantPainter extends CustomPainter {
 
       // Draw flower center - larger and brighter
       final centerPaint = Paint()
-        ..color = Colors.yellow
+        ..color = Colors.orange
         ..style = PaintingStyle.fill;
       canvas.drawCircle(flowerCenter, petalSize * 0.4, centerPaint);
     }

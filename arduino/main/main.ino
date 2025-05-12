@@ -7,6 +7,7 @@
 #include "AES.h"
 #include "Crypto.h"
 #include <WiFiClientSecure.h>
+#include <WebSocketsClient.h>
 
 //Lora Radio Frequency settings
 #define RF_FREQUENCY 868000000   // Hz
@@ -29,26 +30,30 @@ char *pwd = "hZ7qDeqy9Y";
 
 IPAddress serverIP;
 const char *host = "http://127.0.0.1";  
-
-WiFiClientSecure client;
 const int serverPort = 5000;
 
+const char *client_host = "toBeDefined";
+const int client_port = 5001;
+
+WiFiClientSecure client;
+
 SSD1306Wire factory_display(0x3c, 500000, SDA_OLED, SCL_OLED, GEOMETRY_128_64, RST_OLED);
+
+WebSocketsClient webSocket;
 
 /**
  * @brief Send information to server
  * Sends request to http://127.0.0.1/receive
  * 
  */
-void post(String data){
+void post_to_server(String data){
 
     if(client.connect(host, serverPort)){
-        IPAddress serverIp;
-        String url = host + "/receive?data=";
+        String url = host + "/sync_data?data=";
         String endpoint = String(url) +data;
 
          
-        client.print(String("GET ") + endpoint + " HTTP/1.1\r\n" +
+        client.print(String("POST ") + endpoint + " HTTP/1.1\r\n" +
                       "Host: " + host + "\r\n" +
                       "Connection: close\r\n\r\n");
 
@@ -60,15 +65,36 @@ void post(String data){
         }
         client.stop();
     }else{
-        Serial.print("Cloudln't connect to the server");
+        Serial.print("Couldn't connect to the server");
     }
 
 }
 
 
+void post_to_client(String data){
+     if(client.connect(client_host, client_port)){
+        String url = client_host + "/receive?data=";
+        String endpoint = String(url) +data;
+
+         
+        client.print(String("POST ") + endpoint + " HTTP/1.1\r\n" +
+                      "Host: " + host + "\r\n" +
+                      "Connection: close\r\n\r\n");
+
+        while(client.connected() || client.available()){
+            if(client.available()){
+                String line = client.readStringUntil('\n');
+                Serial.println("Res server: " + line);
+            }
+        }
+        client.stop();
+    }else{
+        Serial.print("Couldn't connect to the server");
+    }
+}
+
 /**
  * @brief Set up WiFi connection, Server connection
- * TODO - In the future, it must suport connection with the flutter app
  *  
  */
 void setup(){
@@ -117,7 +143,6 @@ void setup(){
     }
 
     // TODO - Connect to flutter app
-    //Connect to server
     if(connect){
         //Convert host url to IP (DNS), and establish connection
         if(!WiFi.hostByName(host,serverIP)){
@@ -132,13 +157,40 @@ void setup(){
     pinMode(LED, OUTPUT);
     digitalWrite(LED, LOW);
 
+    // Set up WebSocket connection
+    //webSocket.begin(client_host, client_port, "/ws"); // Replace "/ws" with your WebSocket endpoint
+    //webSocket.onEvent(webSocketEvent);
+    //webSocket.setReconnectInterval(5000);
 }
 
 
 /**
  * @brief 
- *  TODO
  */
 void loop(){
+    //webSocket.loop();
+}
 
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+    switch(type) {
+        case WStype_DISCONNECTED:
+            Serial.println("Disconnected from WebSocket server");
+            break;
+        case WStype_CONNECTED:
+            Serial.println("Connected to WebSocket server");
+            break;
+        case WStype_TEXT:
+            Serial.printf("Received message: %s\n", payload);
+            break;
+    }
+}
+
+// Replace the HTTP POST function with this WebSocket send function
+void send_to_flutter(String data) {
+    if(webSocket.isConnected()) {
+        webSocket.sendTXT(data);
+        Serial.println("Data sent via WebSocket: " + data);
+    } else {
+        Serial.println("WebSocket not connected, cannot send data");
+    }
 }

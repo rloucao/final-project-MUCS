@@ -4,6 +4,7 @@ import 'package:mobile/pages/login_page.dart';
 import 'package:mobile/pages/signup_page.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
 import 'package:mobile/services/auth_service.dart';
+import 'package:mobile/services/arduino_service.dart';
 import 'package:provider/provider.dart';
 
 
@@ -12,10 +13,12 @@ void main() {
     MultiProvider(
       providers: [
         // Auth state (with auto-login)
-        ChangeNotifierProvider(create: (_) => AuthService()..autoLogin()),
+        //ChangeNotifierProvider(create: (_) => AuthService()..autoLogin()),
         // Other providers (e.g., hotel selection)
         ChangeNotifierProvider(create: (_) => SelectedHotelProvider()),
         // Add more providers here as needed
+        ChangeNotifierProvider(create: (_) =>  AuthService()..autoLogin()),
+        ChangeNotifierProvider(create: (_) => ArduinoService()),
       ],
       child: const MyApp(),
     ),
@@ -35,10 +38,10 @@ class MyApp extends StatelessWidget {
       ),
       home: Consumer<AuthService>(
         builder: (context, authService, _) {
-          return const AuthenticatedHome();
-         // return authService.isAuthenticated
-         //  ? const AuthenticatedHome()
-         //      : const HomePage();
+         // return const AuthenticatedHome();
+         return authService.isAuthenticated
+          ? const AuthenticatedHome()
+              : const HomePage();
         },
       ),
     );

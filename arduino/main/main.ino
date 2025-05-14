@@ -108,8 +108,8 @@ void setup() {
 
 
 /**
- * @brief 
+ * @brief Function to excute in a loop
  */
 void loop() {
-  //webSocket.loop();
+  
 }

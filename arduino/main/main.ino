@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include "LoRaWan_APP.h"
+#include "WiFi.h"
 #include "HT_SSD1306Wire.h"
 #include <WiFiClientSecure.h>
 
@@ -16,8 +17,11 @@
 
 
 //Wifi ssid and password (Put your WiFi credentials here please :D )
-char *ssid = "Vodafone-18E4A0.5";
-char *pwd = "hZ7qDeqy9Y";
+// char *ssid = "Vodafone-18E4A0.5";
+// char *pwd = "hZ7qDeqy9Y";
+
+char *ssid = "Rodrigo's iPhone";
+char *pwd = "20euroshora";
 
 IPAddress serverIP;
 
@@ -41,6 +45,26 @@ static RadioEvents_t RadioEvents;
 int counter = 0;
 bool txDoneFlag = false;
 
+void send_data(String data){
+
+  if(server_client.connect(server_host, server_port)){
+    String toSend = "counter "; 
+    String url = String("http://") + server_host + ":" + server_port + "/receive_data?data=";
+    String endpoint = String(url) + toSend;
+
+    server_client.print(String("GET ") + endpoint + " HTTP/1.1\r\n" +
+                      "Host: " + server_host + "\r\n" +
+                      "Connection: close\r\n\r\n");
+
+    server_client.stop();
+
+     factory_display.clear();
+  factory_display.drawString(20, 30, "Sent data to server all nice");
+  factory_display.display();
+  }
+}
+
+
 /**
  * @brief Connect to server
  * 
@@ -48,9 +72,19 @@ bool txDoneFlag = false;
 void connect_to_server() {
   if (!server_client.connect(server_host, server_port)) {
     Serial.println("Failed to connect to server");
+    factory_display.clear();
+  factory_display.drawString(20, 30, "Failed to connect to server");
+  factory_display.display();
+
+  delay(5000);
+  
     return;
   }
   Serial.println("Connected to server");
+
+   factory_display.clear();
+  factory_display.drawString(20, 30, "Connected to server");
+  factory_display.display();
 }
 
 /**
@@ -66,6 +100,10 @@ void connect_to_client(){
 }
 
 
+void OnTxDone(void)
+{
+  Serial.print("TX done......");
+}
 /**
  * @brief Set up WiFi connection
  * Connect to server
@@ -78,7 +116,7 @@ void setup() {
   // Inicializa o display
   factory_display.init();
   factory_display.clear();
-  factory_display.drawString(20, 30, "LoRa Sender");
+  factory_display.drawString(20, 30, "Lora Send to server");
   factory_display.display();
   delay(1000);
 
@@ -100,10 +138,33 @@ void setup() {
                     true, 0, 0, LORA_IQ_INVERSION_ON, 3000);
 
 
+ factory_display.clear();
+  factory_display.drawString(20, 30, "Connectiong to WiFi");
+  factory_display.display();
+  WiFi.disconnect(true);
+  delay(1000);
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(ssid, pwd);
+
+  if (WiFi.status() == WL_CONNECTED){
+     factory_display.clear();
+  factory_display.drawString(20, 30, "Lora connected to WiFi");
+  factory_display.display();
+  }else{
+     factory_display.clear();
+  factory_display.drawString(20, 30, "Lora not connected to WiFi");
+  factory_display.display();
   connect_to_server();
-  connect_to_client();
+  }
+
+  delay(1000);
+  
+  //connect_to_client();
 
   Serial.println("LoRa initialized");
+
+  
 }
 
 
@@ -111,5 +172,7 @@ void setup() {
  * @brief Function to excute in a loop
  */
 void loop() {
+  send_data("penis"); 
+  delay(1000);
   
 }

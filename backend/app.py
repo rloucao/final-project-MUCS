@@ -107,7 +107,19 @@ def sync_data():
     print(data)
     return jsonify({"success": True})
 
+@app.route('/get_plants', methods=['GET'])
+def get_plants():
+    try:
+        response = supabase.table("plant_list").select("*").execute()
+        return jsonify({"success": True, "plants": response.data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}, 500)
 
+@app.route('/receive_data', methods=['GET'])
+def receive_data():
+    data = request.args.get('data')
+    print(data)
+    return jsonify({"success": True})
 
 if __name__ == "__main__":
     app.run(debug=True)

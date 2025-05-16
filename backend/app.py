@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from config import Config
 from flask_cors import CORS
+import ast
 
 app = Flask(__name__)
 CORS(app)
@@ -87,6 +88,63 @@ def register_user():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}, 500)
 
+
+@app.route('/plant_list', methods=['GET'])
+def get_plant_list():
+    try:
+        response = supabase.from_("plant_details").select("*").execute()
+
+        return jsonify({"plants": response.data}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/plant_image/<size>/<plant_id>')
+def get_plant_image(size, plant_id):
+    try:
+        image_url = f"https://bmpgwezesvkmugxcsagc.supabase.co/storage/v1/object/public/images/{size}/{plant_id}.jpg"
+        return jsonify({'url': image_url}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/plant/<int:plant_id>', methods=['GET'])
+def get_plant_details(plant_id):
+    try:
+        print(f"Fetching details for plant ID: {plant_id}")
+        # Get info from plant_list
+        response = supabase.from_("plant_details").select("*").eq("id", plant_id).execute()
+        data = response.data[0] if response.data else {}
+
+        # # Convert stringified lists to actual lists
+        # list_fields = [
+        #     "scientific_name", "origin", "sunlight", "propagation", "pruning_month", "other_name"
+        # ]
+        # for field in list_fields:
+        #     if field in data and isinstance(data[field], str):
+        #         try:
+        #             parsed = ast.literal_eval(data[field])
+        #             if isinstance(parsed, list):
+        #                 data[field] = parsed
+        #         except Exception:
+        #             pass  # Leave it as is if it can't be parsed
+        # Automatically parse all values that look like list strings
+        for key, value in data.items():
+            if isinstance(value, str) and value.strip().startswith('[') and value.strip().endswith(']'):
+                try:
+                    parsed = ast.literal_eval(value)
+                    if isinstance(parsed, list):
+                        data[key] = parsed
+                except Exception:
+                    pass  # Leave it as string if parsing fails
+
+        print(f"{data}")
+
+        return jsonify({
+            "success": True,
+            "data": data
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == "__main__":

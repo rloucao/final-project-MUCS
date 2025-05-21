@@ -146,6 +146,30 @@ def get_plant_details(plant_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/plants_by_hotel/<hotel_id>', methods=['GET'])
+def get_plants_by_hotel(hotel_id):
+    try:
+        # Get all plant_id–location pairs for the hotel
+        hotel_plant_links = supabase.from_("hotel_plants").select("*").eq("hotel_id", hotel_id).execute().data
+        if not hotel_plant_links:
+            return jsonify({"hotel_plants": [], "plant_details": []}), 200
+
+        # extract plant type ids to fetch plant details
+        type_ids = [entry["type_id"] for entry in hotel_plant_links]
+        # remove duplicates
+        plant_ids = list(set(type_ids))
+
+        # Fetch full plant data
+        plant_details = supabase.from_("plant_details").select("*").in_("id", type_ids).execute().data
+
+        return jsonify({
+            "hotel_plants": hotel_plant_links,
+            "plant_details": plant_details}
+        ), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)

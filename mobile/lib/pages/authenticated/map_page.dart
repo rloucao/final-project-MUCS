@@ -11,6 +11,7 @@ import 'package:mobile/services/floor_item_service.dart';
 import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
+import '../../utils/empty_states.dart';
 
 class MapPage extends StatefulWidget {
   final Hotel? hotel;
@@ -288,7 +289,7 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     if (_selectedHotel == null) {
-      return _buildNoHotelSelected();
+      return EmptyStates.noHotelSelected();
     }
 
     return Scaffold(
@@ -344,7 +345,7 @@ class _MapPageState extends State<MapPage> {
     }
 
     if (_selectedHotel == null) {
-      return _buildNoHotelSelected();
+      return EmptyStates.noHotelSelected();
     }
 
     if (_floorPlans.isEmpty) {
@@ -382,42 +383,6 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
           ),
-      ],
-    );
-  }
-
-  Widget _buildNoHotelSelected() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          'assets/defaultImage.jpg',
-          fit: BoxFit.cover,
-        ),
-        Container(
-          color: Colors.black.withOpacity(0.6),
-        ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 50),
-            child: Text(
-              'No hotel selected',
-              style: TextStyle(
-                fontSize: 35,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-                shadows: [
-                  Shadow(
-                    blurRadius: 10.0,
-                    color: Colors.green,
-                    offset: Offset(-1.5, -1.5),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }

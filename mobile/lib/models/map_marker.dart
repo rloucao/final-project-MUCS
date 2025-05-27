@@ -5,6 +5,7 @@ class MapMarker {
   final String hotelId;
   final int floorIndex;
   final String? roomId;  // SVG element ID or room identifier
+  final int plantId; // Plant ID
 
   MapMarker({
     required this.id,
@@ -13,6 +14,7 @@ class MapMarker {
     required this.hotelId,
     required this.floorIndex,
     this.roomId,
+    required this.plantId,
   });
 
   // Add from/to JSON methods for storage
@@ -24,6 +26,7 @@ class MapMarker {
       'hotelId': hotelId,
       'floorIndex': floorIndex,
       'roomId': roomId,
+      'plantId': plantId,
     };
   }
 
@@ -35,6 +38,7 @@ class MapMarker {
       hotelId: json['hotelId'],
       floorIndex: json['floorIndex'],
       roomId: json['roomId'],
+      plantId: json['plantId'],
     );
   }
 }

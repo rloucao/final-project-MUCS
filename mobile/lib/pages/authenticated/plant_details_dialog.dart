@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../utils/api_config.dart';
+import 'package:mobile/utils/api_config.dart';
 import 'full_screen_image_page.dart';
 
 class PlantDetailDialog extends StatefulWidget {

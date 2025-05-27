@@ -20,6 +20,7 @@ class StorageUtil {
       'hotelId': m.hotelId,
       'floorIndex': m.floorIndex,
       'roomId': m.roomId,
+      'plantId': m.plantId,
     }).toList();
 
     await prefs.setString(_markerKey, jsonEncode(markerData));
@@ -38,6 +39,7 @@ class StorageUtil {
         hotelId: data['hotelId'] ?? '',
         floorIndex: data['floorIndex'] ?? 0,
         roomId: data['roomId'],
+        plantId: data['plantId'] ?? 0,
       )).toList();
     } catch (e) {
       print('Error loading markers: $e');

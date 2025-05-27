@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-import '../../providers/selected_hotel_provider.dart';
-import '../../utils/api_config.dart';
+import 'package:mobile/providers/selected_hotel_provider.dart';
+import 'package:mobile/utils/api_config.dart';
 import 'plant_details_dialog.dart';
-import '../../utils/empty_states.dart';
+import 'package:mobile/utils/empty_states.dart';
 
 class PlantsPage extends StatefulWidget {
   const PlantsPage({super.key});

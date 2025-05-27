@@ -11,7 +11,8 @@ import 'package:mobile/services/floor_item_service.dart';
 import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
-import '../../utils/empty_states.dart';
+import 'package:mobile/utils/empty_states.dart';
+import 'package:mobile/pages/authenticated/plant_selector.dart';
 
 class MapPage extends StatefulWidget {
   final Hotel? hotel;
@@ -201,6 +202,7 @@ class _MapPageState extends State<MapPage> {
   }
 
 
+
   // Handle floor item tap
   Future<void> _handleFloorItemTap(FloorItem item) async {
     if (_selectedHotel == null) return;
@@ -208,7 +210,6 @@ class _MapPageState extends State<MapPage> {
     final String itemId = item.id.toString();
     print('Floor item tapped: $itemId, Edit mode: $_editMode');
 
-    // Handle non-edit mode...
     if (!_editMode) {
       setState(() {
         _selectedRoomId = itemId;
@@ -217,7 +218,6 @@ class _MapPageState extends State<MapPage> {
       return;
     }
 
-    // Handle edit mode...
     final existingMarkerIndex = _markers.indexWhere((m) => m.roomId == itemId);
 
     if (existingMarkerIndex >= 0) {
@@ -227,14 +227,23 @@ class _MapPageState extends State<MapPage> {
         _statusMessage = 'Marker removed from room $itemId';
       });
     } else {
-      // Get the center point of the room from its clickable area
-      final Rect bounds = item.drawingInstructions.clickableArea.getBounds();
+      // Show plant selector dialog
+      final selectedPlant = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (context) => PlantSelector()),
+      );
 
-      // Store the coordinates in the SVG's coordinate system
+      if (selectedPlant == null) {
+        setState(() {
+          _statusMessage = 'Marker creation cancelled';
+        });
+        return;
+      }
+
+      // Get center point of the room
+      final Rect bounds = item.drawingInstructions.clickableArea.getBounds();
       final centerX = bounds.center.dx;
       final centerY = bounds.center.dy;
-
-      print('Adding marker at SVG coordinates: ($centerX, $centerY) for room $itemId');
 
       final newMarker = MapMarker(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -243,6 +252,7 @@ class _MapPageState extends State<MapPage> {
         hotelId: _selectedHotel!.id,
         floorIndex: _currentFloorIndex,
         roomId: itemId,
+        plantId: int.parse(selectedPlant),
       );
 
       setState(() {
@@ -253,9 +263,10 @@ class _MapPageState extends State<MapPage> {
 
     await _saveMarkers();
     setState(() {
-      _mapKey = UniqueKey(); // Force complete rebuild of the map widget
+      _mapKey = UniqueKey(); // Force full rebuild
     });
   }
+
 
   // Handle marker tap
   Future<void> _handleMarkerTap(MapMarker marker) async {

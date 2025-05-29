@@ -13,11 +13,11 @@ void main() {
     MultiProvider(
       providers: [
         // Auth state (with auto-login)
-        //ChangeNotifierProvider(create: (_) => AuthService()..autoLogin()),
+        ChangeNotifierProvider(create: (_) => AuthService()..autoLogin()),
         // Other providers (e.g., hotel selection)
         ChangeNotifierProvider(create: (_) => SelectedHotelProvider()),
         // Add more providers here as needed
-        ChangeNotifierProvider(create: (_) =>  AuthService()..autoLogin()),
+        //ChangeNotifierProvider(create: (_) =>  AuthService()),
         ChangeNotifierProvider(create: (_) => ArduinoService()),
       ],
       child: const MyApp(),

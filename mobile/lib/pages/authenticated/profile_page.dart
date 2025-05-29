@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:mobile/components/snackbar.dart';
+import 'package:mobile/services/arduino_service.dart';
 import '../../components/image_picker.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
@@ -116,6 +117,31 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+
+  Future<void> _sendMessageToArduinoOn() async {
+    //Connect to the arduino WebSocket server
+    ArduinoService service = ArduinoService();
+    service.connect("");
+    // Send a message to the Arduino
+    service.sendMessage("on");
+
+    // delay to simulate waiting for a response
+    await Future.delayed(Duration(seconds: 2));
+
+    service.disconnect();
+  }
+  Future<void> _sendMessageToArduinoOff() async {
+    //Connect to the arduino WebSocket server
+    ArduinoService service = ArduinoService();
+    service.connect("");
+    // Send a message to the Arduino
+    service.sendMessage("off");
+
+    // delay to simulate waiting for a response
+    await Future.delayed(Duration(seconds: 2));
+
+    service.disconnect();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -316,6 +342,39 @@ class _ProfilePageState extends State<ProfilePage> {
               },
               child: Text('Cancel'),
             ),
+
+          SizedBox(height: 10),
+
+          ElevatedButton.icon(
+              onPressed:
+              _sendMessageToArduinoOn,
+            label: Text('Send Message to Arduino'),
+            icon: Icon(Icons.lightbulb_circle_rounded),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:Colors.green,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+
+
+          ),
+          ElevatedButton.icon(
+              onPressed:
+              _sendMessageToArduinoOff,
+            label: Text('Send Message to Arduino'),
+            icon: Icon(Icons.lightbulb_circle_outlined),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:Colors.green,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+
+
+          )
         ],
       ),
     );
@@ -521,7 +580,7 @@ class _ProfilePageState extends State<ProfilePage> {
         
         animatedSnackbar.show(context: context, message: "Profile picture updated", type: SnackbarType.success);
         
-        // You would typically upload the image here:
+
         // await _profileService.uploadProfileImage(File(image.path));
         // Then refresh the profile
         // await _loadProfile();

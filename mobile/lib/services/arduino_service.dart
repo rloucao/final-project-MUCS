@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 
@@ -12,8 +13,11 @@ class ArduinoService with ChangeNotifier {
   // Getters
   String get lastMessage => _lastMessage;
   bool get isConnected => _isConnected;
-  
-  // Connect to WebSocket server
+
+  /**
+   * Connect to the Arduino WebSocket server.
+   * @param url The WebSocket URL to connect to, typically in the format 'ws://<arduino_ip>:<port>'.
+   */
   void connect(String url) {
     try {
       _channel = IOWebSocketChannel.connect(url);
@@ -47,13 +51,10 @@ class ArduinoService with ChangeNotifier {
   }
   
   // Send message to Arduino
-  void sendMessage(String message) {
-    if (_isConnected && _channel != null) {
-      _channel!.sink.add(message);
-      print('Sent to Arduino: $message');
-    } else {
-      print('Cannot send message: WebSocket not connected');
-    }
+  Future<void> sendMessage(String message) async {
+      final ip = "http://192.168.1.110";
+      final url = message == "on" ? "$ip/led/on" : "$ip/led/off";
+      await http.get(Uri.parse(url));
   }
   
   // Disconnect from WebSocket server

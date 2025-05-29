@@ -27,14 +27,6 @@ class _AuthenticatedHome extends State<AuthenticatedHome>{
     SettingsPage(),
   ];
 
-  final List<String> _appBarTitles = [
-    'Home',
-    'Plants',
-    'Map',
-    'Profile',
-    'Settings',
-  ];
-
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;

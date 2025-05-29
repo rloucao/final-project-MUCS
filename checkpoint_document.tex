@@ -1,0 +1,32 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage[absolute,overlay]{textpos} % For precise logo placement
+\setlength{\TPHorizModule}{1cm}       % Set units for textpos to cm
+\setlength{\TPVertModule}{1cm}        % Set units for textpos to cm
+\geometry{left=3cm,right=3cm,top=3cm,bottom=3cm}
+
+
+\title{\textbf{Florever}\\\large Project Checkpoint}
+
+\author{Nuno Janeiro 60989 \\
+ Stephan Amann  72707 \\
+ Rodrigo Loução 63627 } 
+\date{\today}
+
+\begin{document}
+
+% Place the university logo in the top right corner
+% Please replace 'uni_logo.png' with the actual filename of your logo.
+% You may need to adjust the width (2.5cm currently) and the coordinates (15.5cm, 2.5cm)
+% for optimal placement.
+% The X-coordinate (15.5cm) is calculated as PageWidth (21cm) - RightMargin (3cm) - LogoWidth (2.5cm).
+% The Y-coordinate (2.5cm) is the distance from the top edge of the page.
+\begin{textblock*}{2.5cm}(15.5cm, 2.5cm) % {logo_width}(x_offset_from_left_edge_of_paper, y_offset_from_top_edge_of_paper)
+    \includegraphics[width=\linewidth]{uni_logo.png}
+\end{textblock*}
+
+\maketitle
+
+\end{document} 

@@ -1,15 +1,40 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 
 const char* ssid = "Vodafone-18E4A0";
 const char* pwd = "hZ7qDeqy9Y";
 
 
-Webserver server(80);
+WebServer server(80);
 IPAddress serverIP;
 const char *host = "https://final-project-mucs.onrender.com";  
 WiFiClientSecure client;
+
+
+void sendSensorData(String data) {
+  HTTPClient http;
+  String serverPath = "https://final-project-mucs.onrender.com/send_sensor_data?data=" + data;
+
+  http.begin(serverPath);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponseCode = http.POST("");  
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.println("Server response:");
+    Serial.println(response);  // This should print {"success": true}
+  } else {
+    Serial.print("Error on sending POST: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+}
+
+
 
 void sendInformationToServer(String data){
 if(client.connect(host, 443)){
@@ -42,10 +67,10 @@ void setup(){
     //     sendInformationToServer(data);
     //     server.send(200, "text/plain", "Data sent to server: " + data);
     // });
-    sendInformationToServer("Hello from ESP32!");
+    sendSensorData("Hello from ESP32!");
 
 }
 
 void loop(){
-    server.handleClient();
+    //server.handleClient();
 }

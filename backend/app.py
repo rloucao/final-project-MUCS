@@ -115,11 +115,13 @@ def get_plants():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}, 500)
 
-@app.route('/receive_data', methods=['GET'])
+
+@app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
     print(data)
     return jsonify({"success": True})
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)

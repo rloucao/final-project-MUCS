@@ -8,6 +8,7 @@ import 'package:mobile/models/floor_plan.dart';
 import 'package:mobile/models/map_marker.dart';
 import 'package:mobile/services/hotel_data_service.dart';
 import 'package:mobile/services/floor_item_service.dart';
+import 'package:mobile/services/marker_sync_service.dart';
 import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
@@ -44,7 +45,7 @@ class _MapPageState extends State<MapPage> {
   List<FloorPoint> _navigationPoints = [];
 
   // Selected room/item ID for highlighting
-  String? _selectedRoomId;
+  int? _selectedRoomId;
 
   // Status message to display at the bottom
   String _statusMessage = '';
@@ -87,6 +88,7 @@ class _MapPageState extends State<MapPage> {
     });
 
     try {
+      //print("Hotel Plan ID Datatype: ${_selectedHotel!.id.runtimeType}");
       final floorPlans = _hotelService.getFloorPlansForHotel(_selectedHotel!.id);
 
       setState(() {
@@ -150,7 +152,7 @@ class _MapPageState extends State<MapPage> {
     if (_selectedHotel == null) return;
 
     try {
-      final savedMarkers = await StorageUtil.loadMarkers();
+      final savedMarkers = await MarkerSyncService.syncMarkers(null); //StorageUtil.loadMarkers();
 
       final filteredMarkers = savedMarkers.where((marker) =>
       marker.hotelId == _selectedHotel!.id &&
@@ -184,7 +186,8 @@ class _MapPageState extends State<MapPage> {
 
       final updatedMarkers = [...otherMarkers, ..._markers];
 
-      await StorageUtil.saveMarkers(updatedMarkers);
+      //await StorageUtil.saveMarkers(updatedMarkers);
+      await MarkerSyncService.syncMarkers(updatedMarkers);
       print('Markers saved: ${_markers.length}');
     } catch (e) {
       print('Error saving markers: $e');
@@ -207,7 +210,7 @@ class _MapPageState extends State<MapPage> {
   Future<void> _handleFloorItemTap(FloorItem item) async {
     if (_selectedHotel == null) return;
 
-    final String itemId = item.id.toString();
+    final int itemId = item.id; //.toString();
     print('Floor item tapped: $itemId, Edit mode: $_editMode');
 
     if (!_editMode) {
@@ -246,13 +249,16 @@ class _MapPageState extends State<MapPage> {
       final centerY = bounds.center.dy;
 
       final newMarker = MapMarker(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().millisecondsSinceEpoch, //.toString(),
         x: centerX,
         y: centerY,
         hotelId: _selectedHotel!.id,
         floorIndex: _currentFloorIndex,
         roomId: itemId,
-        plantId: int.parse(selectedPlant),
+        typeId: int.parse(selectedPlant),
+        lastUpdated: DateTime.now(),
+        status: 0, // Default status // TODO: How to define status?
+        isActive: true, // Default to active
       );
 
       setState(() {
@@ -421,7 +427,7 @@ class _MapPageState extends State<MapPage> {
     final List<FloorItemWidget> markerWidgets = _markers.map((marker) {
       // Create a simple floor item for the marker
       final floorItem = FloorShop(
-          id: int.tryParse(marker.id) ?? 0,
+          id: marker.id ?? 0, // int.tryParse()
           drawingInstructions: DrawingInstructions(
             // Create a small clickable area at the marker's position
             clickableArea: Path()..addOval(

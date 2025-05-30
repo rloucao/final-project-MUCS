@@ -93,7 +93,7 @@ def register_user():
 def get_plant_list():
     try:
         response = supabase.from_("plant_details").select("*").execute()
-
+        print(response.data)
         return jsonify({"plants": response.data}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -109,7 +109,7 @@ def get_plant_image(size, plant_id):
 @app.route('/plant/<int:plant_id>', methods=['GET'])
 def get_plant_details(plant_id):
     try:
-        print(f"Fetching details for plant ID: {plant_id}")
+        #print(f"Fetching details for plant ID: {plant_id}")
         # Get info from plant_list
         response = supabase.from_("plant_details").select("*").eq("id", plant_id).execute()
         data = response.data[0] if response.data else {}
@@ -136,7 +136,7 @@ def get_plant_details(plant_id):
                 except Exception:
                     pass  # Leave it as string if parsing fails
 
-        print(f"{data}")
+        #print(f"{data}")
 
         return jsonify({
             "success": True,
@@ -167,6 +167,83 @@ def get_plants_by_hotel(hotel_id):
             "plant_details": plant_details}
         ), 200
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# function expects a list of plant ids
+@app.route('/plant_info', methods=['POST'])
+def get_plant_info():
+    try:
+        data = request.get_json()
+        if not data or 'plant_ids' not in data:
+            return jsonify({"error": "No plant IDs provided"}), 400
+
+        plant_ids = data['plant_ids']
+        if not isinstance(plant_ids, list):
+            return jsonify({"error": "plant_ids should be a list"}), 400
+
+        # Fetch plant details for the given IDs
+        response = supabase.from_("plant_details").select("*").in_("id", plant_ids).execute()
+        if response.error:
+            return jsonify({"error": response.error.message}), 400
+
+        return jsonify({"plant_details": response.data}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/markers', methods=['GET'])
+def get_markers():
+    try:
+        # Fetch columns id, hotelId, typeId, x, y, floorIndex, roomId from hotel_plants
+        response = supabase.from_("hotel_plants").select("*").execute()
+        #print(response)
+        markers = response.data
+        return jsonify({"markers": markers}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/add', methods=['POST'])
+def add_marker():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Insert into Supabase
+        response = supabase.from_("hotel_plants").insert(data).execute()
+        if response.error:
+            return jsonify({"error": response.error.message}), 400
+
+        return jsonify({"message": "Marker added", "data": response.data}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/update', methods=['POST'])
+def update_marker():
+    try:
+        data = request.get_json()
+        if not data or 'id' not in data:
+            return jsonify({"error": "ID required for update"}), 400
+
+        marker_id = data['id']
+
+        # Update by ID
+        response = supabase.from_("hotel_plants").update(data).eq('id', marker_id).execute()
+        if response.error:
+            return jsonify({"error": response.error.message}), 400
+
+        return jsonify({"message": "Marker updated", "data": response.data}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/remove/<int:marker_id>', methods=['GET'])
+def remove_marker(marker_id):
+    try:
+        response = supabase.from_("hotel_plants").delete().eq('id', marker_id).execute()
+        if response.error:
+            return jsonify({"error": response.error.message}), 400
+
+        return jsonify({"message": f"Marker {marker_id} removed"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

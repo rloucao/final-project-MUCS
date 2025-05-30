@@ -25,21 +25,23 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
   }
 
   Future<void> fetchPlantDetails() async {
+    // TODO rewrite this to use the local database
     try {
       final detailResponse = await http.get(
         Uri.parse("${ApiConfig.baseUrl}/plant/${widget.plantId}"),
       );
-      final imageResponse = await http.get(
+      /*final imageResponse = await http.get(
         Uri.parse("${ApiConfig.baseUrl}/plant_image/small/${widget.plantId}"),
-      );
+      );*/
 
-      if (detailResponse.statusCode == 200 && imageResponse.statusCode == 200) {
+      if (detailResponse.statusCode == 200 ) { //&& imageResponse.statusCode == 200
         final detailData = jsonDecode(detailResponse.body);
-        final imageData = jsonDecode(imageResponse.body);
+        //final imageData = jsonDecode(imageResponse.body);
 
         setState(() {
           plantData = detailData['data'];
-          imageUrl = imageData['url'];
+          // imageUrl = imageData['url'];
+          imageUrl = "assets/plant_images/${widget.plantId}.jpg";
           isLoading = false;
         });
       }

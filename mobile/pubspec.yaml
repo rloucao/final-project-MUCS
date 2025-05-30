@@ -82,6 +82,7 @@ flutter:
      - assets/floor_plans/Typical_Dogtrot_Floorplan.svg
      - assets/floor_plans/map_with_points_example.svg
      - assets/plant_background.png
+     - assets/plant_images/
 
 
 

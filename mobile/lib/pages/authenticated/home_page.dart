@@ -101,6 +101,7 @@ class _HomePageState extends State<LandingPage> {
 
   void _setHotel(Hotel hotel) {
     context.read<SelectedHotelProvider>().setHotel(hotel);
+    // TODO check if data for hotel is already fetched
   }
 
   @override

@@ -1,7 +1,7 @@
 // lib/models/floor_plan.dart
 class FloorPlan {
-  final String id;
-  final String hotelId;
+  final int id;
+  final int hotelId;
   final String name;
   final int? floorNumber;
   final String svgImagePath;

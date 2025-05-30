@@ -1,11 +1,15 @@
 class MapMarker {
-  final String id;
+  final int id;
   final double x;
   final double y;
-  final String hotelId;
+  final int hotelId;
   final int floorIndex;
-  final String? roomId;  // SVG element ID or room identifier
-  final int plantId; // Plant ID
+  final int? roomId;  // SVG element ID or room identifier
+  final int typeId; // Plant ID
+  DateTime lastUpdated; // Timestamp for last update
+  int status; // status of the plant
+  bool isActive;
+
 
   MapMarker({
     required this.id,
@@ -14,7 +18,10 @@ class MapMarker {
     required this.hotelId,
     required this.floorIndex,
     this.roomId,
-    required this.plantId,
+    required this.typeId,
+    required this.lastUpdated,
+    required this.status,
+    required this.isActive,
   });
 
   // Add from/to JSON methods for storage
@@ -26,7 +33,10 @@ class MapMarker {
       'hotelId': hotelId,
       'floorIndex': floorIndex,
       'roomId': roomId,
-      'plantId': plantId,
+      'typeId': typeId,
+      'lastUpdated': lastUpdated.toIso8601String(),
+      'status': status,
+      'isActive': isActive,
     };
   }
 
@@ -38,7 +48,10 @@ class MapMarker {
       hotelId: json['hotelId'],
       floorIndex: json['floorIndex'],
       roomId: json['roomId'],
-      plantId: json['plantId'],
+      typeId: json['typeId'],
+      lastUpdated: DateTime.parse(json['lastUpdated']),
+      status: json['status'] ?? 0, // Default to 0 if not provided
+      isActive: json['isActive'] ?? false, // Default to false if not provided
     );
   }
 }

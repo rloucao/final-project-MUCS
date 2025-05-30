@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/models/plant_detail.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mobile/providers/selected_hotel_provider.dart';
 import 'package:mobile/utils/api_config.dart';
+import '../../models/map_marker.dart';
+import '../../utils/storage_util.dart';
 import 'plant_details_dialog.dart';
 import 'package:mobile/utils/empty_states.dart';
 
@@ -16,7 +19,7 @@ class PlantsPage extends StatefulWidget {
 }
 
 class _PlantsPageState extends State<PlantsPage> {
-  late Future<List<Map<String, dynamic>>> _hotelPlantsFuture;
+  late Future<List<Map<String, dynamic>>>? _hotelPlantsFuture;
 
   @override
   void didChangeDependencies() {
@@ -27,13 +30,114 @@ class _PlantsPageState extends State<PlantsPage> {
 
     if (hotelId != null) {
       _hotelPlantsFuture = fetchHotelPlants(hotelId);
+      print(_hotelPlantsFuture);
     } else {
       // Set an empty future so the build method can handle it gracefully
       _hotelPlantsFuture = Future.value([]);
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchHotelPlants(String hotelId) async {
+  Future<List<Map<String, dynamic>>> fetchHotelPlants(int hotelId) async {
+    // get markers from disk and filter by hotelId
+    final markersFromDisk = await StorageUtil.loadMarkers();
+    final filteredMarkers = markersFromDisk.where((marker) =>
+    marker.hotelId == hotelId).toList();
+
+    // if no markers found for the hotel, return an empty list
+    if (filteredMarkers.isEmpty) {
+      print("### No markers found for hotel $hotelId");
+      return [];
+    }
+
+    // print all markers for debugging
+    print("### Markers from disk for hotel $hotelId:");
+    print('### ${filteredMarkers}');
+    filteredMarkers.forEach((marker) {
+      print("###\tMarker ID: ${marker.id}, Hotel ID: ${marker
+          .hotelId}, Plant Type ID: ${marker.typeId}");
+    });
+
+    // get plant details from disk
+    final plantDetailsFromDisk = await StorageUtil.loadPlantDetails();
+    if (plantDetailsFromDisk.isEmpty) {
+      print("### No plant details found in disk storage.");
+      return [];
+    }
+    // map each marker to its plant details
+    // create a mapping for each MapMarker a link to its PlantDetail object, i.e. the one with the same typeId
+    // multiple markers can have the same typeId, so we need to create a mapping for each marker
+    // TODO
+
+    // Create a map for fast lookup: typeId -> PlantDetail
+    final plantDetailMap = {
+      for (var detail in plantDetailsFromDisk) detail.id: detail
+    };
+
+    // Map each marker to a combined map of marker and its plant details
+    final List<Map<String, dynamic>> combinedList = [];
+
+    for (var marker in filteredMarkers) {
+      final plantDetail = plantDetailMap[marker.typeId];
+
+      if (plantDetail != null) {
+        combinedList.add({
+          // Marker info
+          'id': marker.id,
+          'hotelId': marker.hotelId,
+          'typeId': marker.typeId,
+          'x': marker.x,
+          'y': marker.y,
+          'floorIndex': marker.floorIndex,
+          'roomId': marker.roomId,
+          // Plant detail info (all non-null fields)
+          'plant_details': plantDetail.toJson(), // Assuming PlantDetail has a toJson() method
+        });
+      } else {
+        print("### Warning: No plant detail found for typeId ${marker.typeId}");
+      }
+    }
+    return combinedList;
+  }
+
+
+
+   /* final markersWithPlantDetails = filteredMarkers.map((marker) {
+      final plantDetails = plantDetailsFromDisk.firstWhere(
+        (plant) => plant.id == marker.typeId
+      );
+      return {
+        ...marker.toJson(),
+        'plant_details': plantDetails,
+      };
+    }).toList();
+
+    print("### Markers with plant details for hotel $hotelId:");
+    markersWithPlantDetails.forEach((marker) {
+      print("###\tMarker ID: ${marker['id']}, Plant Type ID: ${marker['typeId']}, Common Name: ${marker['plant_details']['common_name']}");
+    });
+
+    return markersWithPlantDetails;
+
+
+
+    // print plant details from disk
+    print("### Plant details from disk for hotel $hotelId:");
+    plantDetailsFromDisk.forEach((plant) {
+      print("###\tPlant ID: ${plant.id}, Common Name: ${plant.common_name}");
+    });
+
+    // map plant details by id for quick access
+    final plantDetailsById = {
+      for (var plant in plantDetailsFromDisk) plant.id: plant,
+    };
+
+    // print plant details for debugging
+    print("### Plant details from disk:");
+    plantDetailsById.forEach((id, plant) {
+      print("###\tPlant ID: $id, Type ID: ${plant.id}, Common Name: ${plant.common_name}");
+    });
+
+
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/plants_by_hotel/$hotelId'),
       headers: {'Content-Type': 'application/json'},
@@ -69,7 +173,7 @@ class _PlantsPageState extends State<PlantsPage> {
     } else {
       throw Exception('Failed to load hotel plants');
     }
-  }
+  }*/
 
   String _formatScientificName(dynamic raw) {
     if (raw == null || raw is! String) return '';
@@ -98,18 +202,7 @@ class _PlantsPageState extends State<PlantsPage> {
   }
 
   Future<String?> fetchPlantImageUrl(String size, String plantId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/plant_image/$size/$plantId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      final responseData = jsonDecode(response.body);
-      if (response.statusCode == 200 && responseData['url'] != null) {
-        return responseData['url'];
-      }
-    } catch (_) {}
-    return null;
+    return "assets/plant_images/${plantId}.jpg";
   }
 
   void showPlantDetails(BuildContext context, int plantTypeId) {
@@ -157,7 +250,7 @@ class _PlantsPageState extends State<PlantsPage> {
             itemBuilder: (context, index) {
               final hotelPlant = hotelPlants[index];
               final plantDetails = hotelPlant['plant_details'] ?? {};
-              final location = hotelPlant['location'];
+              final location = hotelPlant['roomId']?.toString();
               final plantTypeId = plantDetails['id']?.toString() ?? '';
 
               return GestureDetector(
@@ -184,7 +277,7 @@ class _PlantsPageState extends State<PlantsPage> {
                             child: ClipRRect(
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                               child: imageUrl != null
-                                  ? Image.network(
+                                  ? Image.asset(
                                 imageUrl,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
@@ -218,7 +311,7 @@ class _PlantsPageState extends State<PlantsPage> {
                                     ),
                                   if (location != null && location.toString().trim().isNotEmpty)
                                     Text(
-                                      location,
+                                      'Room ${location}',
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
                                         fontSize: 11,

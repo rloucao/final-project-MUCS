@@ -1,5 +1,4 @@
 #include <WiFi.h>
-#include <WebServer.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 
@@ -25,29 +24,13 @@ void sendSensorData(String data) {
   if (httpResponseCode > 0) {
     String response = http.getString();
     Serial.println("Server response:");
-    Serial.println(response);  // This should print {"success": true}
+    Serial.println(response); 
   } else {
     Serial.print("Error on sending POST: ");
     Serial.println(httpResponseCode);
   }
 
   http.end();
-}
-
-
-
-void sendInformationToServer(String data){
-if(client.connect(host, 443)){
-    String url = String("https://") + host + "/send_sensor_data";
-    String postData = "data=" + data;
-
-    client.print(String("POST ") + endpoint + " HTTP/1.1\r\n" +
-                      "Host: " + host + "\r\n" +
-                      "Connection: close\r\n\r\n");
-
-
-    client.stop();
-    }
 }
 
 
@@ -62,11 +45,6 @@ void setup(){
 
     Serial.println("\nWiFi connected: " + WiFi.localIP().toString());
 
-    // server.on("/send_sensor_data", HTTP_POST, []() {
-    //     String data = server.arg("data");
-    //     sendInformationToServer(data);
-    //     server.send(200, "text/plain", "Data sent to server: " + data);
-    // });
     sendSensorData("Hello from ESP32!");
 
 }

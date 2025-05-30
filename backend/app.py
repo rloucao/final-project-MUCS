@@ -125,22 +125,5 @@ def receive_data():
     return jsonify({"success": True}), 200
 
 
-
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-    
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(b"Hello, World!")
-
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        print(post_data)
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Data received")
-
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)

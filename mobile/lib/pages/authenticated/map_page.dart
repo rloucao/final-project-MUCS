@@ -8,9 +8,12 @@ import 'package:mobile/models/floor_plan.dart';
 import 'package:mobile/models/map_marker.dart';
 import 'package:mobile/services/hotel_data_service.dart';
 import 'package:mobile/services/floor_item_service.dart';
+import 'package:mobile/services/marker_sync_service.dart';
 import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
+import 'package:mobile/utils/empty_states.dart';
+import 'package:mobile/pages/authenticated/plant_selector.dart';
 
 class MapPage extends StatefulWidget {
   final Hotel? hotel;
@@ -42,7 +45,7 @@ class _MapPageState extends State<MapPage> {
   List<FloorPoint> _navigationPoints = [];
 
   // Selected room/item ID for highlighting
-  String? _selectedRoomId;
+  int? _selectedRoomId;
 
   // Status message to display at the bottom
   String _statusMessage = '';
@@ -85,6 +88,7 @@ class _MapPageState extends State<MapPage> {
     });
 
     try {
+      //print("Hotel Plan ID Datatype: ${_selectedHotel!.id.runtimeType}");
       final floorPlans = _hotelService.getFloorPlansForHotel(_selectedHotel!.id);
 
       setState(() {
@@ -148,7 +152,7 @@ class _MapPageState extends State<MapPage> {
     if (_selectedHotel == null) return;
 
     try {
-      final savedMarkers = await StorageUtil.loadMarkers();
+      final savedMarkers = await MarkerSyncService.syncMarkers(null); //StorageUtil.loadMarkers();
 
       final filteredMarkers = savedMarkers.where((marker) =>
       marker.hotelId == _selectedHotel!.id &&
@@ -182,7 +186,8 @@ class _MapPageState extends State<MapPage> {
 
       final updatedMarkers = [...otherMarkers, ..._markers];
 
-      await StorageUtil.saveMarkers(updatedMarkers);
+      //await StorageUtil.saveMarkers(updatedMarkers);
+      await MarkerSyncService.syncMarkers(updatedMarkers);
       print('Markers saved: ${_markers.length}');
     } catch (e) {
       print('Error saving markers: $e');
@@ -200,14 +205,14 @@ class _MapPageState extends State<MapPage> {
   }
 
 
+
   // Handle floor item tap
   Future<void> _handleFloorItemTap(FloorItem item) async {
     if (_selectedHotel == null) return;
 
-    final String itemId = item.id.toString();
+    final int itemId = item.id; //.toString();
     print('Floor item tapped: $itemId, Edit mode: $_editMode');
 
-    // Handle non-edit mode...
     if (!_editMode) {
       setState(() {
         _selectedRoomId = itemId;
@@ -216,7 +221,6 @@ class _MapPageState extends State<MapPage> {
       return;
     }
 
-    // Handle edit mode...
     final existingMarkerIndex = _markers.indexWhere((m) => m.roomId == itemId);
 
     if (existingMarkerIndex >= 0) {
@@ -226,22 +230,35 @@ class _MapPageState extends State<MapPage> {
         _statusMessage = 'Marker removed from room $itemId';
       });
     } else {
-      // Get the center point of the room from its clickable area
-      final Rect bounds = item.drawingInstructions.clickableArea.getBounds();
+      // Show plant selector dialog
+      final selectedPlant = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (context) => PlantSelector()),
+      );
 
-      // Store the coordinates in the SVG's coordinate system
+      if (selectedPlant == null) {
+        setState(() {
+          _statusMessage = 'Marker creation cancelled';
+        });
+        return;
+      }
+
+      // Get center point of the room
+      final Rect bounds = item.drawingInstructions.clickableArea.getBounds();
       final centerX = bounds.center.dx;
       final centerY = bounds.center.dy;
 
-      print('Adding marker at SVG coordinates: ($centerX, $centerY) for room $itemId');
-
       final newMarker = MapMarker(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().millisecondsSinceEpoch, //.toString(),
         x: centerX,
         y: centerY,
         hotelId: _selectedHotel!.id,
         floorIndex: _currentFloorIndex,
         roomId: itemId,
+        typeId: int.parse(selectedPlant),
+        lastUpdated: DateTime.now(),
+        status: 0, // Default status // TODO: How to define status?
+        isActive: true, // Default to active
       );
 
       setState(() {
@@ -252,9 +269,10 @@ class _MapPageState extends State<MapPage> {
 
     await _saveMarkers();
     setState(() {
-      _mapKey = UniqueKey(); // Force complete rebuild of the map widget
+      _mapKey = UniqueKey(); // Force full rebuild
     });
   }
+
 
   // Handle marker tap
   Future<void> _handleMarkerTap(MapMarker marker) async {
@@ -288,7 +306,7 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     if (_selectedHotel == null) {
-      return _buildNoHotelSelected();
+      return EmptyStates.noHotelSelected();
     }
 
     return Scaffold(
@@ -344,7 +362,7 @@ class _MapPageState extends State<MapPage> {
     }
 
     if (_selectedHotel == null) {
-      return _buildNoHotelSelected();
+      return EmptyStates.noHotelSelected();
     }
 
     if (_floorPlans.isEmpty) {
@@ -386,42 +404,6 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildNoHotelSelected() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          'assets/defaultImage.jpg',
-          fit: BoxFit.cover,
-        ),
-        Container(
-          color: Colors.black.withOpacity(0.6),
-        ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 50),
-            child: Text(
-              'No hotel selected',
-              style: TextStyle(
-                fontSize: 35,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-                shadows: [
-                  Shadow(
-                    blurRadius: 10.0,
-                    color: Colors.green,
-                    offset: Offset(-1.5, -1.5),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   // Build floor map using floors_map_widget
   Widget _buildFloorMap() {
     // Create FloorItemWidgets for each floor item
@@ -445,7 +427,7 @@ class _MapPageState extends State<MapPage> {
     final List<FloorItemWidget> markerWidgets = _markers.map((marker) {
       // Create a simple floor item for the marker
       final floorItem = FloorShop(
-          id: int.tryParse(marker.id) ?? 0,
+          id: marker.id ?? 0, // int.tryParse()
           drawingInstructions: DrawingInstructions(
             // Create a small clickable area at the marker's position
             clickableArea: Path()..addOval(

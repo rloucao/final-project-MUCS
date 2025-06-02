@@ -78,7 +78,7 @@ class StorageUtil {
   static Future<List<MapMarker>> loadMarkers() async {
     final prefs = await SharedPreferences.getInstance();
     final markersString = prefs.getString(_markerKey) ?? '[]';
-    print("Markers String: $markersString");
+    // print("Markers String: $markersString");
 
     //MarkerSyncService.syncMarkers();
 

@@ -55,8 +55,8 @@ class _HomePageState extends State<LandingPage> {
       );
 
       _currentPosition = position;
-      print(position.latitude);
-      print(position.longitude);
+      //print(position.latitude);
+      //print(position.longitude);
 
       // Calculate distance for each hotel
       for (var hotel in _hotels) {

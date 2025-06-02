@@ -16,7 +16,7 @@ class Plant {
       id: json['id'].toString(),
       commonName: json['common_name'] ?? '',
       imageUrl: // TODO change to local
-      'https://bmpgwezesvkmugxcsagc.supabase.co/storage/v1/object/public/images/small/${json['id']}.jpg',
+      "assets/plant_images/${json['id']}.jpg",
     );
   }
 }

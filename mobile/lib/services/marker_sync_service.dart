@@ -34,9 +34,7 @@ class MarkerSyncService {
     try {
       print("==> Syncing markers from server");
       // If no markers are provided, load from disk
-      print("\tmarkersFromDisk before check: $markersFromDisk");
       markersFromDisk ??= await StorageUtil.loadMarkers();
-      print("\n\tmarkersFromDisk after check: $markersFromDisk");
       final markersFromServer = await fetchMarkersFromServer();
 
 
@@ -76,7 +74,7 @@ class MarkerSyncService {
         }
       }
 
-      print("==> Markers from server:\n");
+      /*print("==> Markers from server:\n");
       for (var marker in markersFromServer) {
         print(marker.toJson());
       }
@@ -84,7 +82,7 @@ class MarkerSyncService {
       print("==> Markers from local storage:\n");
       for (var marker in markersFromDisk) {
         print(marker.toJson());
-      }
+      }*/
 
       // save updated markers to disk
       mergedMarkers = diskMap.values.toList();

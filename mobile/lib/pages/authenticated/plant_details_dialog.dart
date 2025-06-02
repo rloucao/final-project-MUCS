@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:mobile/utils/api_config.dart';
 import 'full_screen_image_page.dart';
 
 class PlantDetailDialog extends StatefulWidget {
   final int plantId;
+  final Map<String, dynamic> plantData;
 
-  const PlantDetailDialog({super.key, required this.plantId});
+  const PlantDetailDialog({super.key, required this.plantId, required this.plantData});
 
   @override
   State<PlantDetailDialog> createState() => _PlantDetailDialogState();
@@ -21,44 +20,34 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
   @override
   void initState() {
     super.initState();
-    fetchPlantDetails();
-  }
 
-  Future<void> fetchPlantDetails() async {
-    // TODO rewrite this to use the local database
-    try {
-      final detailResponse = await http.get(
-        Uri.parse("${ApiConfig.baseUrl}/plant/${widget.plantId}"),
-      );
-      /*final imageResponse = await http.get(
-        Uri.parse("${ApiConfig.baseUrl}/plant_image/small/${widget.plantId}"),
-      );*/
-
-      if (detailResponse.statusCode == 200 ) { //&& imageResponse.statusCode == 200
-        final detailData = jsonDecode(detailResponse.body);
-        //final imageData = jsonDecode(imageResponse.body);
-
-        setState(() {
-          plantData = detailData['data'];
-          // imageUrl = imageData['url'];
-          imageUrl = "assets/plant_images/${widget.plantId}.jpg";
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print("Error fetching plant details: $e");
-      setState(() {
-        isLoading = false;
-      });
-    }
+    plantData = widget.plantData;
+    imageUrl = "assets/plant_images/${widget.plantId}.jpg"; // Assuming images are stored locally
+    isLoading = false;
   }
 
   bool isNonEmptyList(dynamic value) =>
       value is List && value.isNotEmpty;
 
   String formatList(dynamic value) {
+
     if (value is String && value.startsWith("[")) {
-      return (jsonDecode(value) as List<dynamic>).join(", ");
+      try {
+        // Try JSON decoding first
+        return (jsonDecode(value) as List<dynamic>).join(", ");
+      } catch (e) {
+        //print("JSON decoding failed: $e");
+
+        // Fallback: Try to parse a Dart-like list string (e.g., "['Brazil']")
+        final dartListPattern = RegExp(r"\['(.*?)'\]");
+        final matches = dartListPattern.allMatches(value);
+        if (matches.isNotEmpty) {
+          return matches.map((m) => m.group(1)).join(", ");
+        }
+
+        // Final fallback: strip brackets and single quotes manually
+        return value.replaceAll(RegExp(r"[\[\]']"), "");
+      }
     } else if (value is List) {
       return value.join(", ");
     }
@@ -97,7 +86,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          (plantData!["common_name"] ?? "Unknown Plant").toString().toUpperCase(),
+                          (plantData!["plant_details"]["common_name"] ?? "Unknown Plant").toString().toUpperCase(),
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -121,12 +110,12 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (plantData!["other_name"] != null &&
-                          formatList(plantData!["other_name"]) != "")
+                      if (plantData!["plant_details"]["other_name"] != null &&
+                          formatList(plantData!["plant_details"]["other_name"]) != "")
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Text(
-                            formatList(plantData!["other_name"]),
+                            formatList(plantData!["plant_details"]["other_name"]),
                             style: const TextStyle(fontSize: 16, color: Colors.grey),
                           ),
                         ),
@@ -160,53 +149,53 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _detailField("Scientific Name", formatList(plantData!["scientific_name"])),
-                                _detailField("Family", plantData!["family"] ?? "Unknown"),
-                                _detailField("Type", plantData!["type"] ?? "Unknown"),
-                                _detailField("Origin", formatList(plantData!["origin"])),
+                                _detailField("Scientific Name", formatList(plantData!["plant_details"]["scientific_name"])),
+                                _detailField("Family", plantData!["plant_details"]["family"] ?? "Unknown"),
+                                _detailField("Type", plantData!["plant_details"]["type"] ?? "Unknown"),
+                                _detailField("Origin", formatList(plantData!["plant_details"]["origin"])),
                               ],
                             ),
                           )
                         ],
                       ),
                       const SizedBox(height: 12),
-                      if (plantData!["description"] != null)
+                      if (plantData!["plant_details"]["description"] != null)
                         Text(
-                          plantData!["description"],
+                          plantData!["plant_details"]["description"],
                           style: const TextStyle(fontSize: 16),
                         ),
                       const SizedBox(height: 16),
                       // Remaining fields
-                      _detailField("Cycle", plantData!["cycle"]),
-                      _detailField("Propagation", formatList(plantData!["propagation"])),
-                      _detailField("Hardiness", plantData!["hardiness_min"] != null
-                          ? "${plantData!["hardiness_min"]} - ${plantData!["hardiness_max"]}"
+                      _detailField("Cycle", plantData!["plant_details"]["cycle"]),
+                      _detailField("Propagation", formatList(plantData!["plant_details"]["propagation"])),
+                      _detailField("Hardiness", plantData!["plant_details"]["hardiness_min"] != null
+                          ? "${plantData!["plant_details"]["hardiness_min"]} - ${plantData!["plant_details"]["hardiness_max"]}"
                           : null),
-                      _detailField("Watering", plantData!["watering"]),
-                      _detailField("Sunlight", formatList(plantData!["sunlight"])),
-                      _detailField("Pruning Month", formatList(plantData!["pruning_month"])),
-                      _detailField("Maintenance", plantData!["maintenance"]),
-                      _detailField("Growth Rate", plantData!["growth_rate"]),
+                      _detailField("Watering", plantData!["plant_details"]["watering"]),
+                      _detailField("Sunlight", formatList(plantData!["plant_details"]["sunlight"])),
+                      _detailField("Pruning Month", formatList(plantData!["plant_details"]["pruning_month"])),
+                      _detailField("Maintenance", plantData!["plant_details"]["maintenance"]),
+                      _detailField("Growth Rate", plantData!["plant_details"]["growth_rate"]),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 12,
                         runSpacing: 8,
                         children: [
-                          _boolField("Drought Tolerant", plantData!["drought_tolerant"]),
-                          _boolField("Salt Tolerant", plantData!["salt_tolerant"]),
-                          _boolField("Thorny", plantData!["thorny"]),
-                          _boolField("Invasive", plantData!["invasive"]),
-                          _boolField("Tropical", plantData!["tropical"]),
-                          _boolField("Flowers", plantData!["flowers"]),
-                          _boolField("Cones", plantData!["cones"]),
-                          _boolField("Fruits", plantData!["fruits"]),
-                          _boolField("Edible Fruit", plantData!["edible_fruit"]),
-                          _boolField("Leaf", plantData!["leaf"]),
-                          _boolField("Edible Leaf", plantData!["edible_leaf"]),
-                          _boolField("Cuisine", plantData!["cuisine"]),
-                          _boolField("Medicinal", plantData!["medicinal"]),
-                          _boolField("Poisonous to Humans", plantData!["poisonous_to_humans"]),
-                          _boolField("Poisonous to Pets", plantData!["poisonous_to_pets"]),
+                          _boolField("Drought Tolerant", plantData!["plant_details"]["drought_tolerant"]),
+                          _boolField("Salt Tolerant", plantData!["plant_details"]["salt_tolerant"]),
+                          _boolField("Thorny", plantData!["plant_details"]["thorny"]),
+                          _boolField("Invasive", plantData!["plant_details"]["invasive"]),
+                          _boolField("Tropical", plantData!["plant_details"]["tropical"]),
+                          _boolField("Flowers", plantData!["plant_details"]["flowers"]),
+                          _boolField("Cones", plantData!["plant_details"]["cones"]),
+                          _boolField("Fruits", plantData!["plant_details"]["fruits"]),
+                          _boolField("Edible Fruit", plantData!["plant_details"]["edible_fruit"]),
+                          _boolField("Leaf", plantData!["plant_details"]["leaf"]),
+                          _boolField("Edible Leaf", plantData!["plant_details"]["edible_leaf"]),
+                          _boolField("Cuisine", plantData!["plant_details"]["cuisine"]),
+                          _boolField("Medicinal", plantData!["plant_details"]["medicinal"]),
+                          _boolField("Poisonous to Humans", plantData!["plant_details"]["poisonous_to_humans"]),
+                          _boolField("Poisonous to Pets", plantData!["plant_details"]["poisonous_to_pets"]),
                         ],
                       ),
                       const SizedBox(height: 24),

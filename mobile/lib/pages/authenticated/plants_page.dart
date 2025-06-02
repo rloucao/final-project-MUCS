@@ -30,7 +30,6 @@ class _PlantsPageState extends State<PlantsPage> {
 
     if (hotelId != null) {
       _hotelPlantsFuture = fetchHotelPlants(hotelId);
-      print(_hotelPlantsFuture);
     } else {
       // Set an empty future so the build method can handle it gracefully
       _hotelPlantsFuture = Future.value([]);
@@ -49,13 +48,13 @@ class _PlantsPageState extends State<PlantsPage> {
       return [];
     }
 
-    // print all markers for debugging
+    /*// print all markers for debugging
     print("### Markers from disk for hotel $hotelId:");
     print('### ${filteredMarkers}');
     filteredMarkers.forEach((marker) {
       print("###\tMarker ID: ${marker.id}, Hotel ID: ${marker
           .hotelId}, Plant Type ID: ${marker.typeId}");
-    });
+    });*/
 
     // get plant details from disk
     final plantDetailsFromDisk = await StorageUtil.loadPlantDetails();
@@ -72,6 +71,13 @@ class _PlantsPageState extends State<PlantsPage> {
     final plantDetailMap = {
       for (var detail in plantDetailsFromDisk) detail.id: detail
     };
+
+    /*// print all mappings for debugging
+    print("§§§ Mapping of plant type id to data:");
+    plantDetailMap.forEach((typeId, detail) {
+      print("§§§\tType ID: $typeId, details: ${detail.toJson()}");
+    });*/
+
 
     // Map each marker to a combined map of marker and its plant details
     final List<Map<String, dynamic>> combinedList = [];
@@ -96,84 +102,20 @@ class _PlantsPageState extends State<PlantsPage> {
         print("### Warning: No plant detail found for typeId ${marker.typeId}");
       }
     }
-    return combinedList;
-  }
+    /*// Print the combined list for debugging
+    print("### Combined list of markers and plant details for hotel $hotelId:");
+    combinedList.forEach((entry) {
+      print("###\tEntry ID: ${entry['id']}, PlantType ID: ${entry['typeId']}, Plant Type ID Details: ${entry['plant_details']['id']}");
+    });*/
 
-
-
-   /* final markersWithPlantDetails = filteredMarkers.map((marker) {
-      final plantDetails = plantDetailsFromDisk.firstWhere(
-        (plant) => plant.id == marker.typeId
-      );
-      return {
-        ...marker.toJson(),
-        'plant_details': plantDetails,
-      };
-    }).toList();
-
-    print("### Markers with plant details for hotel $hotelId:");
-    markersWithPlantDetails.forEach((marker) {
-      print("###\tMarker ID: ${marker['id']}, Plant Type ID: ${marker['typeId']}, Common Name: ${marker['plant_details']['common_name']}");
-    });
-
-    return markersWithPlantDetails;
-
-
-
-    // print plant details from disk
-    print("### Plant details from disk for hotel $hotelId:");
-    plantDetailsFromDisk.forEach((plant) {
-      print("###\tPlant ID: ${plant.id}, Common Name: ${plant.common_name}");
-    });
-
-    // map plant details by id for quick access
-    final plantDetailsById = {
-      for (var plant in plantDetailsFromDisk) plant.id: plant,
-    };
-
-    // print plant details for debugging
-    print("### Plant details from disk:");
-    plantDetailsById.forEach((id, plant) {
-      print("###\tPlant ID: $id, Type ID: ${plant.id}, Common Name: ${plant.common_name}");
-    });
-
-
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/plants_by_hotel/$hotelId'),
-      headers: {'Content-Type': 'application/json'},
+    // search for entry with id 1748548431852
+    final entryWithId1748548431852 = combinedList.firstWhere(
+      (entry) => entry['id'] == 1748548431852,
+      orElse: () => {},
     );
 
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200 &&
-        responseData['hotel_plants'] != null &&
-        responseData['plant_details'] != null) {
-      final hotelPlants = List<Map<String, dynamic>>.from(
-          responseData['hotel_plants']);
-
-      // Return early if the list is empty
-      if (hotelPlants.isEmpty) {
-        return [];
-      }
-
-      final plantDetailsList = List<Map<String, dynamic>>.from(
-          responseData['plant_details']);
-      final plantDetailsById = {
-        for (var plant in plantDetailsList) plant['id']: plant,
-      };
-
-      return hotelPlants.map((hotelPlant) {
-        final typeId = hotelPlant['type_id'];
-        final plantDetails = plantDetailsById[typeId] ?? {};
-
-        return {
-          ...hotelPlant,
-          'plant_details': plantDetails,
-        };
-      }).toList();
-    } else {
-      throw Exception('Failed to load hotel plants');
-    }
-  }*/
+    return combinedList;
+  }
 
   String _formatScientificName(dynamic raw) {
     if (raw == null || raw is! String) return '';
@@ -205,14 +147,21 @@ class _PlantsPageState extends State<PlantsPage> {
     return "assets/plant_images/${plantId}.jpg";
   }
 
-  void showPlantDetails(BuildContext context, int plantTypeId) {
+  void showPlantDetails(BuildContext context, int plantTypeId, Map<String, dynamic> hotelPlant) {
+    // TODO load plant Data <string, dynamic> from _hotelPlantsFuture
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return PlantDetailDialog(plantId: plantTypeId);
+        return PlantDetailDialog(
+          plantId: plantTypeId,
+          plantData: hotelPlant,
+        );
       },
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -256,7 +205,9 @@ class _PlantsPageState extends State<PlantsPage> {
               return GestureDetector(
                 onTap: () {
                   if (plantTypeId.isNotEmpty) {
-                    showPlantDetails(context, int.parse(plantTypeId));
+                    if (plantTypeId.isNotEmpty) {
+                      showPlantDetails(context, int.parse(plantTypeId), hotelPlant);
+                    }
                   }
                 },
                 child: FutureBuilder<String?>(
@@ -286,7 +237,7 @@ class _PlantsPageState extends State<PlantsPage> {
                             ),
                           ),
                           Expanded(
-                            flex: 2,
+                            flex: 3,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                               child: Column(
@@ -337,194 +288,3 @@ class _PlantsPageState extends State<PlantsPage> {
 }
 
 
-/*
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../../utils/api_config.dart';
-import 'plant_details_dialog.dart';
-
-class PlantsPage extends StatefulWidget {
-  const PlantsPage({super.key});
-
-  @override
-  State<PlantsPage> createState() => _PlantsPageState();
-}
-
-class _PlantsPageState extends State<PlantsPage> {
-  late Future<List<Map<String, dynamic>>> _plantsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-
-
-
-    _plantsFuture = fetchAllPlants();
-  }
-
-  Future<List<Map<String, dynamic>>> fetchAllPlants() async {
-    final test = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/plants_by_hotel/1'),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/plant_list'),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200 && responseData['plants'] != null) {
-      return List<Map<String, dynamic>>.from(responseData['plants']);
-    } else {
-      throw Exception('Failed to load plants');
-    }
-  }
-
-  String _formatScientificName(dynamic raw) {
-    if (raw == null || raw is! String) return '';
-
-    try {
-      // Try decoding as JSON array
-      final List<dynamic> parsed = jsonDecode(raw);
-      if (parsed is List) {
-        return parsed.join(', ');
-      }
-    } catch (_) {
-      // Fallback: remove extra characters and split manually
-      final cleaned = raw
-          .replaceAll(RegExp(r'^"+|"+$'), '')  // remove leading/trailing double quotes
-          .replaceAll('[', '')
-          .replaceAll(']', '')
-          .replaceAll("'", '')
-          .trim();
-
-      if (cleaned.isEmpty) return '';
-      return cleaned.split(',').map((e) => e.trim()).join(', ');
-    }
-
-    // Final fallback (shouldn't be reached, but ensures a return value)
-    return '';
-  }
-
-  Future<String?> fetchPlantImageUrl(String size, String plantId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/plant_image/$size/$plantId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      final responseData = jsonDecode(response.body);
-      if (response.statusCode == 200 && responseData['url'] != null) {
-        return responseData['url'];
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  /// Function to open the plant detail dialog
-  void showPlantDetails(BuildContext context, int plantId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return PlantDetailDialog(plantId: plantId);
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      //appBar: AppBar(title: const Text('Plant List')),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _plantsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-
-          final plants = snapshot.data!;
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 3 / 4,
-            ),
-            itemCount: plants.length,
-            itemBuilder: (context, index) {
-              final plant = plants[index];
-              return GestureDetector(
-                onTap: () => showPlantDetails(context, plant['id']),
-                child: FutureBuilder<String?>(
-                  future: fetchPlantImageUrl('small', plant['id'].toString()),
-                  builder: (context, imageSnapshot) {
-                    final imageUrl = imageSnapshot.data;
-                    return Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            flex: 8,
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                              child: imageUrl != null
-                                  ? Image.network(
-                                imageUrl,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              )
-                                  : Container(color: Colors.grey[300]),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    (plant['common_name'] ?? 'Unnamed').toString().toUpperCase(),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  if (plant['scientific_name'] != null)
-                                    Text(
-                                      _formatScientificName(plant['scientific_name']),
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-*/

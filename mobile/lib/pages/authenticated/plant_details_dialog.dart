@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'full_screen_image_page.dart';
+import 'package:intl/intl.dart';
 
 class PlantDetailDialog extends StatefulWidget {
   final int plantId;
@@ -22,7 +23,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
     super.initState();
 
     plantData = widget.plantData;
-    imageUrl = "assets/plant_images/${widget.plantId}.jpg"; // Assuming images are stored locally
+    imageUrl = "assets/plant_images/${widget.plantId}.jpg";
     isLoading = false;
   }
 
@@ -60,6 +61,68 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
     size: 20,
   );
 
+  Color _getStatusColor(dynamic status) {
+    switch (status) {
+      case 1:
+        return Colors.redAccent;
+      case 2:
+        return Colors.orange;
+      case 3:
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(dynamic status) {
+    switch (status) {
+      case 1:
+        return "Status: Bad";
+      case 2:
+        return "Status: Okay";
+      case 3:
+        return "Status: Very Good";
+      default:
+        return "Status: Unknown";
+    }
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Plant"),
+          content: const Text("Are you sure you want to delete this plant?"),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text("Delete", style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                print("Deleted Plant ${widget.plantId}");
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Close detail view
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatTimestamp(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) return "Unknown";
+    try {
+      final dt = DateTime.parse(timestamp);
+      return DateFormat('yyyy-MM-dd HH:mm').format(dt);
+    } catch (e) {
+      return "Invalid date";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -75,7 +138,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
         children: [
           Column(
             children: [
-              // Sticky Header: Name + Close Icon
+              // Sticky Header
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                 child: Container(
@@ -86,7 +149,9 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          (plantData!["plant_details"]["common_name"] ?? "Unknown Plant").toString().toUpperCase(),
+                          (plantData!["plant_details"]["common_name"] ?? "Unknown Plant")
+                              .toString()
+                              .toUpperCase(),
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -103,6 +168,59 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                 ),
               ),
 
+              // New Top Info Row (Room + Timestamp)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                color: Colors.grey.shade100,
+                child: Row(
+                  children: [
+                    Icon(Icons.meeting_room_outlined, size: 20, color: Colors.grey.shade700),
+                    const SizedBox(width: 4),
+                    Text("Room ${plantData!["roomId"] ?? "-"}",
+                        style: const TextStyle(fontSize: 14)),
+                    const Spacer(),
+                    Icon(Icons.update, size: 20, color: Colors.grey.shade700),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatTimestamp(plantData!["lastUpdated"]),
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              // Status Panel and Buttons
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                color: _getStatusColor(plantData!["status"]),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _getStatusText(plantData!["status"]),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () {
+                            print("Water Plant ${widget.plantId}");
+                          },
+                          icon: const Icon(Icons.water_drop, color: Colors.white),
+                          label: const Text("Water Plant", style: TextStyle(color: Colors.white)),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            _confirmDelete(context);
+                          },
+                          icon: const Icon(Icons.delete, color: Colors.white),
+                          label: const Text("Delete Plant", style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
               // Scrollable Content
               Expanded(
                 child: SingleChildScrollView(

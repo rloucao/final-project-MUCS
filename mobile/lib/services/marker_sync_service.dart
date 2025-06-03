@@ -50,6 +50,12 @@ class MarkerSyncService {
 
         // check if both markers exist
         if (serverMarker != null && diskMarker != null) {
+
+          // debug print statements
+          /*print("Comparing markers with ID: $id");
+          print("Server Marker: ${serverMarker.toJson()}");
+          print("Disk Marker: ${diskMarker.toJson()}");*/
+
           // both exist, compare timestamps
           if (serverMarker.lastUpdated.isAfter(diskMarker.lastUpdated)) {
             // remote marker is newer, update local marker

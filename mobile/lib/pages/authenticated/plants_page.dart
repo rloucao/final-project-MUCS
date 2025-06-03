@@ -1,13 +1,10 @@
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:mobile/models/plant_detail.dart';
+import 'package:mobile/providers/hotel_plants_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mobile/providers/selected_hotel_provider.dart';
-import 'package:mobile/utils/api_config.dart';
-import '../../models/map_marker.dart';
-import '../../utils/storage_util.dart';
 import 'plant_details_dialog.dart';
 import 'package:mobile/utils/empty_states.dart';
 
@@ -19,102 +16,28 @@ class PlantsPage extends StatefulWidget {
 }
 
 class _PlantsPageState extends State<PlantsPage> {
-  late Future<List<Map<String, dynamic>>>? _hotelPlantsFuture;
+  Future<void>? _hotelPlantsFuture;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
 
-    final selectedHotelProvider = Provider.of<SelectedHotelProvider>(context, listen: false);
-    final hotelId = selectedHotelProvider.selectedHotel?.id;
-
-    if (hotelId != null) {
-      _hotelPlantsFuture = fetchHotelPlants(hotelId);
-    } else {
-      // Set an empty future so the build method can handle it gracefully
-      _hotelPlantsFuture = Future.value([]);
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> fetchHotelPlants(int hotelId) async {
-    // get markers from disk and filter by hotelId
-    final markersFromDisk = await StorageUtil.loadMarkers();
-    final filteredMarkers = markersFromDisk.where((marker) =>
-    marker.hotelId == hotelId).toList();
-
-    // if no markers found for the hotel, return an empty list
-    if (filteredMarkers.isEmpty) {
-      print("### No markers found for hotel $hotelId");
-      return [];
-    }
-
-    /*// print all markers for debugging
-    print("### Markers from disk for hotel $hotelId:");
-    print('### ${filteredMarkers}');
-    filteredMarkers.forEach((marker) {
-      print("###\tMarker ID: ${marker.id}, Hotel ID: ${marker
-          .hotelId}, Plant Type ID: ${marker.typeId}");
-    });*/
-
-    // get plant details from disk
-    final plantDetailsFromDisk = await StorageUtil.loadPlantDetails();
-    if (plantDetailsFromDisk.isEmpty) {
-      print("### No plant details found in disk storage.");
-      return [];
-    }
-    // map each marker to its plant details
-    // create a mapping for each MapMarker a link to its PlantDetail object, i.e. the one with the same typeId
-    // multiple markers can have the same typeId, so we need to create a mapping for each marker
-    // TODO
-
-    // Create a map for fast lookup: typeId -> PlantDetail
-    final plantDetailMap = {
-      for (var detail in plantDetailsFromDisk) detail.id: detail
-    };
-
-    /*// print all mappings for debugging
-    print("§§§ Mapping of plant type id to data:");
-    plantDetailMap.forEach((typeId, detail) {
-      print("§§§\tType ID: $typeId, details: ${detail.toJson()}");
-    });*/
-
-
-    // Map each marker to a combined map of marker and its plant details
-    final List<Map<String, dynamic>> combinedList = [];
-
-    for (var marker in filteredMarkers) {
-      final plantDetail = plantDetailMap[marker.typeId];
-
-      if (plantDetail != null) {
-        combinedList.add({
-          // Marker info
-          'id': marker.id,
-          'hotelId': marker.hotelId,
-          'typeId': marker.typeId,
-          'x': marker.x,
-          'y': marker.y,
-          'floorIndex': marker.floorIndex,
-          'roomId': marker.roomId,
-          // Plant detail info (all non-null fields)
-          'plant_details': plantDetail.toJson(), // Assuming PlantDetail has a toJson() method
+    // Delay the initialization to ensure the context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final selectedHotel = Provider.of<SelectedHotelProvider>(context, listen: false).selectedHotel;
+      if (selectedHotel != null) {
+        final hotelPlantsProvider = Provider.of<HotelPlantsProvider>(context, listen: false);
+        setState(() {
+          _hotelPlantsFuture = hotelPlantsProvider.loadHotelPlants(selectedHotel.id);
         });
-      } else {
-        print("### Warning: No plant detail found for typeId ${marker.typeId}");
       }
-    }
-    /*// Print the combined list for debugging
-    print("### Combined list of markers and plant details for hotel $hotelId:");
-    combinedList.forEach((entry) {
-      print("###\tEntry ID: ${entry['id']}, PlantType ID: ${entry['typeId']}, Plant Type ID Details: ${entry['plant_details']['id']}");
-    });*/
-
-    // search for entry with id 1748548431852
-    final entryWithId1748548431852 = combinedList.firstWhere(
-      (entry) => entry['id'] == 1748548431852,
-      orElse: () => {},
-    );
-
-    return combinedList;
+      else {
+        // If no hotel is selected, set an empty future
+        setState(() {
+          _hotelPlantsFuture = Future.value([]);
+        });
+      }
+    });
   }
 
   String _formatScientificName(dynamic raw) {
@@ -148,8 +71,6 @@ class _PlantsPageState extends State<PlantsPage> {
   }
 
   void showPlantDetails(BuildContext context, int plantTypeId, Map<String, dynamic> hotelPlant) {
-    // TODO load plant Data <string, dynamic> from _hotelPlantsFuture
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -161,16 +82,17 @@ class _PlantsPageState extends State<PlantsPage> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final selectedHotel = Provider.of<SelectedHotelProvider>(context).selectedHotel;
     if (selectedHotel == null) {
       return EmptyStates.noHotelSelected();
     }
+
     return Scaffold(
-      body: FutureBuilder<List<Map<String, dynamic>>>(
+      body: _hotelPlantsFuture == null
+          ? const Center(child: CircularProgressIndicator())
+          : FutureBuilder<void>(
         future: _hotelPlantsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -180,9 +102,9 @@ class _PlantsPageState extends State<PlantsPage> {
             return const Center(child: Text("Failed to load plants for this hotel."));
           }
 
-          final hotelPlants = snapshot.data!;
+          final hotelPlants = Provider.of<HotelPlantsProvider>(context).hotelPlants;
           if (hotelPlants.isEmpty) {
-            return const Center(
+            return Center(
               child: Text("There are currently no plants registered for this hotel."),
             );
           }
@@ -286,5 +208,4 @@ class _PlantsPageState extends State<PlantsPage> {
     );
   }
 }
-
 

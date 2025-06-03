@@ -293,6 +293,7 @@ class _MapPageState extends State<MapPage> {
 
     // In edit mode, remove the marker
     setState(() {
+      // TODO add proper removal logic
       _markers.removeWhere((m) => m.id == marker.id);
       _statusMessage = 'Marker removed';
     });

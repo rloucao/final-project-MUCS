@@ -5,7 +5,9 @@ import 'package:mobile/models/hotel.dart';
 import 'package:mobile/services/hotel_data_service.dart';
 import 'package:mobile/pages/authenticated/map_page.dart';
 import 'package:mobile/components/hotel_card.dart';
+import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
+import '../../providers/hotel_plants_provider.dart';
 import '../../providers/selected_hotel_provider.dart';
 
 class LandingPage extends StatefulWidget {
@@ -100,8 +102,13 @@ class _HomePageState extends State<LandingPage> {
   }
 
   void _setHotel(Hotel hotel) {
-    context.read<SelectedHotelProvider>().setHotel(hotel);
+    final selectedHotelProvider = context.read<SelectedHotelProvider>();
+    final hotelPlantsProvider = context.read<HotelPlantsProvider>();
+
+    selectedHotelProvider.setHotel(hotel);
     // TODO check if data for hotel is already fetched
+    // marker_sync_service.syncMarkers();
+    hotelPlantsProvider.loadHotelPlants(hotel.id);
   }
 
   @override

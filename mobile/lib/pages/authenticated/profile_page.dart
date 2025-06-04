@@ -360,6 +360,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
 
           ),
+
+          SizedBox(height: 30),
+
+
           ElevatedButton.icon(
               onPressed:
               _sendMessageToArduinoOff,

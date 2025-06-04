@@ -54,7 +54,14 @@ class ArduinoService with ChangeNotifier {
   Future<void> sendMessage(String message) async {
       final ip = "http://192.168.1.110";
       final url = message == "on" ? "$ip/led/on" : "$ip/led/off";
-      await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url));
+
+      if(response.statusCode == 200){
+        print("Message sent successfully: ${response.body}");
+      }else{
+        print('Failed to send message: ${response.statusCode}');
+      }
+
   }
   
   // Disconnect from WebSocket server

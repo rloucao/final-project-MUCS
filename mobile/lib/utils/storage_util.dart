@@ -102,6 +102,13 @@ class StorageUtil {
     }
   }
 
+  // delete all markers
+  static Future<void> deleteMarkers() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_markerKey);
+    print("All markers deleted from storage.");
+  }
+
   // Load PlantDetails safely with error handling
   static Future<List<PlantDetail>> loadPlantDetails() async {
     final prefs = await SharedPreferences.getInstance();

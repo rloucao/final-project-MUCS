@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/models/map_marker.dart';
+import 'package:mobile/services/marker_sync_service.dart';
 import 'dart:convert';
 import 'full_screen_image_page.dart';
 import 'package:intl/intl.dart';
@@ -102,7 +104,21 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
             TextButton(
               child: const Text("Delete", style: TextStyle(color: Colors.red)),
               onPressed: () {
-                print("Deleted Plant ${widget.plantId}");
+                // create a MapMarker with widget.plantData
+                MapMarker marker = MapMarker(
+                  id: plantData!["id"],
+                  hotelId: plantData!["hotelId"],
+                  typeId: plantData!["typeId"],
+                  x: plantData!["x"],
+                  y: plantData!["y"],
+                  floorIndex: plantData!["floorIndex"],
+                  roomId: plantData!["roomId"],
+                  lastUpdated: DateTime.now(),
+                  status: plantData!["status"],
+                  isActive: false, // Set to false to mark as deleted
+                );
+                MarkerSyncService.syncSingleMarker(marker);
+                print("Plant ${plantData!["id"]} deleted successfully");
                 Navigator.of(context).pop(); // Close dialog
                 Navigator.of(context).pop(); // Close detail view
               },

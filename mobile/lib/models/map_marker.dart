@@ -49,7 +49,7 @@ class MapMarker {
       floorIndex: json['floorIndex'],
       roomId: json['roomId'],
       typeId: json['typeId'],
-      lastUpdated: DateTime.parse(json['lastUpdated']),
+      lastUpdated: DateTime.parse(json['lastUpdated']).toLocal(),
       status: json['status'] ?? 0, // Default to 0 if not provided
       isActive: json['isActive'] ?? false, // Default to false if not provided
     );

@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile/providers/hotel_plants_provider.dart';
+import 'package:mobile/utils/status_util.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mobile/providers/selected_hotel_provider.dart';
@@ -23,7 +24,7 @@ class _PlantsPageState extends State<PlantsPage> {
     super.initState();
 
     // Delay the initialization to ensure the context is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    /*WidgetsBinding.instance.addPostFrameCallback((_) {
       final selectedHotel = Provider.of<SelectedHotelProvider>(context, listen: false).selectedHotel;
       if (selectedHotel != null) {
         final hotelPlantsProvider = Provider.of<HotelPlantsProvider>(context, listen: false);
@@ -35,6 +36,21 @@ class _PlantsPageState extends State<PlantsPage> {
         // If no hotel is selected, set an empty future
         setState(() {
           _hotelPlantsFuture = Future.value([]);
+        });
+      }
+    });*/
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final selectedHotel = Provider.of<SelectedHotelProvider>(context, listen: false).selectedHotel;
+      final hotelPlantsProvider = Provider.of<HotelPlantsProvider>(context, listen: false);
+
+      if (mounted) {
+        setState(() {
+          _hotelPlantsFuture = selectedHotel != null
+              ? hotelPlantsProvider.loadHotelPlants(selectedHotel.id)
+              : Future.value([]);
         });
       }
     });
@@ -70,8 +86,8 @@ class _PlantsPageState extends State<PlantsPage> {
     return "assets/plant_images/${plantId}.jpg";
   }
 
-  void showPlantDetails(BuildContext context, int plantTypeId, Map<String, dynamic> hotelPlant) {
-    showDialog(
+  Future<void> showPlantDetails(BuildContext context, int plantTypeId, Map<String, dynamic> hotelPlant) async {
+    final bool? isDeleted = await showDialog(
       context: context,
       builder: (BuildContext context) {
         return PlantDetailDialog(
@@ -80,6 +96,15 @@ class _PlantsPageState extends State<PlantsPage> {
         );
       },
     );
+    if (isDeleted != null && isDeleted) {
+      final selectedHotel = Provider.of<SelectedHotelProvider>(context, listen: false).selectedHotel;
+      if (selectedHotel != null) {
+        setState(() {
+          _hotelPlantsFuture = Provider.of<HotelPlantsProvider>(context, listen: false)
+              .loadHotelPlants(selectedHotel.id);
+        });
+      }
+    }
   }
 
   @override
@@ -102,12 +127,13 @@ class _PlantsPageState extends State<PlantsPage> {
             return const Center(child: Text("Failed to load plants for this hotel."));
           }
 
-          final hotelPlants = Provider.of<HotelPlantsProvider>(context).hotelPlants;
-          if (hotelPlants.isEmpty) {
+          final allHotelPlants = Provider.of<HotelPlantsProvider>(context).hotelPlants;
+          if (allHotelPlants.isEmpty) {
             return Center(
               child: Text("There are currently no plants registered for this hotel."),
             );
           }
+          final hotelPlants = allHotelPlants.where((p) => p['isActive'] == true).toList();
 
           return GridView.builder(
             padding: const EdgeInsets.all(12),
@@ -141,12 +167,16 @@ class _PlantsPageState extends State<PlantsPage> {
                       elevation: 4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: StatusUtil.getStatusColor(hotelPlant["status"]),
+                          width: hotelPlant["status"] < 1 ? 1 : 3,
+                        )
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            flex: 8,
+                          AspectRatio(
+                            aspectRatio: 4 / 3, // Keeps image height consistent
                             child: ClipRRect(
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                               child: imageUrl != null
@@ -158,12 +188,12 @@ class _PlantsPageState extends State<PlantsPage> {
                                   : Container(color: Colors.grey[300]),
                             ),
                           ),
-                          Expanded(
-                            flex: 3,
+                          Expanded( // This gives the text area a fixed height based on available space
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Text(
                                     (plantDetails['common_name'] ?? 'Unnamed').toString().toUpperCase(),
@@ -172,6 +202,8 @@ class _PlantsPageState extends State<PlantsPage> {
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   if (plantDetails['scientific_name'] != null)
                                     Text(
@@ -181,6 +213,8 @@ class _PlantsPageState extends State<PlantsPage> {
                                         fontStyle: FontStyle.italic,
                                         fontSize: 12,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   if (location != null && location.toString().trim().isNotEmpty)
                                     Text(
@@ -190,6 +224,8 @@ class _PlantsPageState extends State<PlantsPage> {
                                         fontSize: 11,
                                         color: Colors.grey,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                 ],
                               ),

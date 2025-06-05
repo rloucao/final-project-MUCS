@@ -51,11 +51,10 @@ class MarkerSyncService {
         // check if both markers exist
         if (serverMarker != null && diskMarker != null) {
 
-          // debug print statements
-          /*print("Comparing markers with ID: $id");
+          /*// debug print statements
+          print("Comparing markers with ID: $id");
           print("Server Marker timestamp: ${serverMarker.lastUpdated}, status: ${serverMarker.isActive}");
-          print("Disk Marker timestamp: ${diskMarker.lastUpdated}, status: ${diskMarker.isActive}\n\n");
-*/
+          print("Disk Marker timestamp: ${diskMarker.lastUpdated}, status: ${diskMarker.isActive}\n\n");*/
           // both exist, compare timestamps
           if ((serverMarker.lastUpdated.toLocal()).isAfter(diskMarker.lastUpdated)) {
             // remote marker is newer, update local marker
@@ -163,8 +162,8 @@ class MarkerSyncService {
 
     if (response.statusCode == 200) {
       print("Marker updated successfully on server: ${marker.toJson()}");
-    } else {
+    } /*else {
       print("Failed to update marker on server: ${marker.toJson()}");
-    }
+    }*/
   }
 }

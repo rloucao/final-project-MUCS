@@ -40,6 +40,7 @@ class HotelPlantsProvider with ChangeNotifier {
             'roomId': marker.roomId,
             'lastUpdated': marker.lastUpdated.toIso8601String(),
             'status': marker.status,
+            'isActive': marker.isActive,
             'plant_details': plantDetail.toJson(),
           });
         } else {

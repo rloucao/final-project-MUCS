@@ -122,8 +122,6 @@ class _AuthenticatedHome extends State<AuthenticatedHome>{
     }
   }
 
-
-
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;

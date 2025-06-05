@@ -95,7 +95,7 @@ def register_user():
 def get_plant_list():
     try:
         response = supabase.from_("plant_details").select("*").execute()
-        print(response.data)
+        #print(response.data)
         return jsonify({"plants": response.data}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -116,19 +116,6 @@ def get_plant_details(plant_id):
         response = supabase.from_("plant_details").select("*").eq("id", plant_id).execute()
         data = response.data[0] if response.data else {}
 
-        # # Convert stringified lists to actual lists
-        # list_fields = [
-        #     "scientific_name", "origin", "sunlight", "propagation", "pruning_month", "other_name"
-        # ]
-        # for field in list_fields:
-        #     if field in data and isinstance(data[field], str):
-        #         try:
-        #             parsed = ast.literal_eval(data[field])
-        #             if isinstance(parsed, list):
-        #                 data[field] = parsed
-        #         except Exception:
-        #             pass  # Leave it as is if it can't be parsed
-        # Automatically parse all values that look like list strings
         for key, value in data.items():
             if isinstance(value, str) and value.strip().startswith('[') and value.strip().endswith(']'):
                 try:

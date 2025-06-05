@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/models/map_marker.dart';
 import 'package:mobile/services/marker_sync_service.dart';
+import 'package:mobile/services/profile_service.dart';
 import 'dart:convert';
 import '../../services/arduino_service.dart';
 import 'full_screen_image_page.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile/utils/status_util.dart';
+
+import 'map_page.dart';
 
 class PlantDetailDialog extends StatefulWidget {
   final int plantId;
@@ -20,6 +24,8 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
   Map<String, dynamic>? plantData;
   String? imageUrl;
   bool isLoading = true;
+  //final ProfileService _profileService = ProfileService();
+  String? role = "client";
 
   @override
   void initState() {
@@ -28,7 +34,14 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
     plantData = widget.plantData;
     imageUrl = "assets/plant_images/${widget.plantId}.jpg";
     isLoading = false;
+    //setUser();
   }
+
+  /*Future<void> setUser() async {
+    final user = await _profileService.getUserProfile();
+    role = user?['role'];
+    print("########## User role: ${role}");
+  }*/
 
   bool isNonEmptyList(dynamic value) =>
       value is List && value.isNotEmpty;
@@ -64,32 +77,6 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
     size: 20,
   );
 
-  Color _getStatusColor(dynamic status) {
-    switch (status) {
-      case 1:
-        return Colors.redAccent;
-      case 2:
-        return Colors.orange;
-      case 3:
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(dynamic status) {
-    switch (status) {
-      case 1:
-        return "Status: Bad";
-      case 2:
-        return "Status: Okay";
-      case 3:
-        return "Status: Very Good";
-      default:
-        return "Status: Unknown";
-    }
-  }
-
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
@@ -104,7 +91,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
             ),
             TextButton(
               child: const Text("Delete", style: TextStyle(color: Colors.red)),
-              onPressed: () {
+              onPressed: () async {
                 // create a MapMarker with widget.plantData
                 MapMarker marker = MapMarker(
                   id: plantData!["id"],
@@ -114,14 +101,14 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                   y: plantData!["y"],
                   floorIndex: plantData!["floorIndex"],
                   roomId: plantData!["roomId"],
-                  lastUpdated: DateTime.now(),
+                  lastUpdated: DateTime.now().toUtc(),
                   status: plantData!["status"],
                   isActive: false, // Set to false to mark as deleted
                 );
-                MarkerSyncService.syncSingleMarker(marker);
+                await MarkerSyncService.syncSingleMarker(marker);
                 print("Plant ${plantData!["id"]} deleted successfully");
                 Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Close detail view
+                Navigator.of(context).pop(true); // Close detail view
               },
             ),
           ],
@@ -219,39 +206,91 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                 ),
               ),
               // Status Panel and Buttons
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                color: _getStatusColor(plantData!["status"]),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _getStatusText(plantData!["status"]),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    Row(
-                      children: [
-                        TextButton.icon(
-                          onPressed: () {
-                            _sendMessageToArduinoOn;
-                            print("Water Plant ${widget.plantId}");
-                          },
-                          icon: const Icon(Icons.water_drop, color: Colors.white),
-                          label: const Text("Water Plant", style: TextStyle(color: Colors.white)),
-                        ),
-                        const SizedBox(width: 8),
-                        TextButton.icon(
-                          onPressed: () {
-                            _confirmDelete(context);
-                          },
-                          icon: const Icon(Icons.delete, color: Colors.white),
-                          label: const Text("Delete Plant", style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    )
-                  ],
+              if (role == 'client')
+                Container(
+                  width: double.infinity,
+                  color: StatusUtil.getStatusColor(plantData!["status"]),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const minButtonGroupWidth = 300; // Roughly two buttons side-by-side
+                      final hasRoomForInlineLayout = constraints.maxWidth > (minButtonGroupWidth + 150); // estimate for status text
+
+                      if (hasRoomForInlineLayout) {
+                        // Inline Row: Status + Buttons
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              StatusUtil.getStatusText(plantData!["status"]),
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: () {
+                                    _sendMessageToArduinoOn();
+                                    print("Water Plant ${widget.plantId}");
+                                  },
+                                  icon: const Icon(Icons.water_drop, color: Colors.white),
+                                  label: const Text("Water Plant", style: TextStyle(color: Colors.white)),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    _confirmDelete(context);
+                                  },
+                                  icon: const Icon(Icons.delete, color: Colors.white),
+                                  label: const Text("Delete Plant", style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      } else {
+                        // Stacked Layout: Status text + Button group below
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              StatusUtil.getStatusText(plantData!["status"]),
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 8,
+                                    children: [
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          _sendMessageToArduinoOn();
+                                          print("Water Plant ${widget.plantId}");
+                                        },
+                                        icon: const Icon(Icons.water_drop, color: Colors.white),
+                                        label: const Text("Water Plant", style: TextStyle(color: Colors.white)),
+                                      ),
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          _confirmDelete(context);
+                                        },
+                                        icon: const Icon(Icons.delete, color: Colors.white),
+                                        label: const Text("Delete Plant", style: TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              ],
+                            )
+                          ],
+                        );
+                      }
+                    },
+                  ),
                 ),
-              ),
+
               // Scrollable Content
               Expanded(
                 child: SingleChildScrollView(

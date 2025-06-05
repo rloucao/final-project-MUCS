@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/models/map_marker.dart';
 import 'package:mobile/services/marker_sync_service.dart';
 import 'dart:convert';
+import '../../services/arduino_service.dart';
 import 'full_screen_image_page.dart';
 import 'package:intl/intl.dart';
 
@@ -139,6 +140,19 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
     }
   }
 
+  Future<void> _sendMessageToArduinoOn() async {
+    //Connect to the arduino WebSocket server
+    ArduinoService service = ArduinoService();
+    service.connect("");
+    // Send a message to the Arduino
+    service.sendMessage("on");
+
+    // delay to simulate waiting for a response
+    await Future.delayed(Duration(seconds: 2));
+
+    service.disconnect();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -219,6 +233,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                       children: [
                         TextButton.icon(
                           onPressed: () {
+                            _sendMessageToArduinoOn;
                             print("Water Plant ${widget.plantId}");
                           },
                           icon: const Icon(Icons.water_drop, color: Colors.white),

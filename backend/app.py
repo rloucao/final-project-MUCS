@@ -1,3 +1,5 @@
+from http.client import responses
+
 from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from config import Config
@@ -244,6 +246,17 @@ def remove_marker(marker_id):
             return jsonify({"error": response.error.message}), 400
 
         return jsonify({"message": f"Marker {marker_id} removed"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/delete_database', methods=['GET'])
+def delete_database():
+    try:
+        response = supabase.from_("hotel_plants").delete().neq('id', None).execute()
+        if response.error:
+            return jsonify({"error": response.error.message}), 400
+
+        return jsonify({"message": "All hotel_plants entries deleted"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

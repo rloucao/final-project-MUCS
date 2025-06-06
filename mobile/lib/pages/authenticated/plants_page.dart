@@ -6,6 +6,7 @@ import 'package:mobile/utils/status_util.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mobile/providers/selected_hotel_provider.dart';
+import '../../services/profile_service.dart';
 import 'plant_details_dialog.dart';
 import 'package:mobile/utils/empty_states.dart';
 
@@ -18,11 +19,13 @@ class PlantsPage extends StatefulWidget {
 
 class _PlantsPageState extends State<PlantsPage> {
   Future<void>? _hotelPlantsFuture;
+  final ProfileService _profileService = ProfileService();
+  Map<String, dynamic>? _profileData;
 
   @override
   void initState() {
     super.initState();
-
+    _loadProfile();
     // Delay the initialization to ensure the context is ready
     /*WidgetsBinding.instance.addPostFrameCallback((_) {
       final selectedHotel = Provider.of<SelectedHotelProvider>(context, listen: false).selectedHotel;
@@ -53,6 +56,13 @@ class _PlantsPageState extends State<PlantsPage> {
               : Future.value([]);
         });
       }
+    });
+  }
+
+  Future<void> _loadProfile() async {
+    final user = await _profileService.getUserProfile();
+    setState(() {
+      _profileData = user;
     });
   }
 
@@ -168,8 +178,8 @@ class _PlantsPageState extends State<PlantsPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: StatusUtil.getStatusColor(hotelPlant["status"]),
-                          width: hotelPlant["status"] < 1 ? 1 : 3,
+                          color: (_profileData?["role"] == "client") ? StatusUtil.getStatusColor(hotelPlant["status"]) : Colors.grey,
+                          width: (_profileData?["role"] == "client") ? (hotelPlant["status"] < 1 ? 1 : 3) : 1,
                         )
                       ),
                       child: Column(

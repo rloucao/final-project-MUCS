@@ -24,17 +24,26 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
   Map<String, dynamic>? plantData;
   String? imageUrl;
   bool isLoading = true;
-  //final ProfileService _profileService = ProfileService();
-  String? role = "client";
+  final ProfileService _profileService = ProfileService();
+  Map<String, dynamic>? _profileData;
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
 
     plantData = widget.plantData;
     imageUrl = "assets/plant_images/${widget.plantId}.jpg";
+    _loadProfile();
     isLoading = false;
+
     //setUser();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = await _profileService.getUserProfile();
+    setState(() {
+      _profileData = user;
+    });
   }
 
   /*Future<void> setUser() async {
@@ -206,7 +215,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                 ),
               ),
               // Status Panel and Buttons
-              if (role == 'client')
+              if (_profileData?['role'] == 'client')
                 Container(
                   width: double.infinity,
                   color: StatusUtil.getStatusColor(plantData!["status"]),

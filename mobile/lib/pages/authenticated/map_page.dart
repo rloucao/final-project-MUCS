@@ -10,6 +10,7 @@ import 'package:mobile/providers/hotel_plants_provider.dart';
 import 'package:mobile/services/hotel_data_service.dart';
 import 'package:mobile/services/floor_item_service.dart';
 import 'package:mobile/services/marker_sync_service.dart';
+import 'package:mobile/services/profile_service.dart';
 import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
@@ -38,6 +39,8 @@ class _MapPageState extends State<MapPage> {
   List<MapMarker> _markers = [];
   List<MapMarker> _temporaryMarkers = []; // For temporary marker storage
   bool _isLoading = false;
+  final ProfileService _profileService = ProfileService();
+  Map<String, dynamic>? _profileData;
 
   // SVG content for the current floor
   String _svgContent = '';
@@ -61,9 +64,16 @@ class _MapPageState extends State<MapPage> {
       _selectedHotel = widget.hotel;
       final hotelId = _selectedHotel!.id;
       print("Selected hotel ID: $hotelId");
-
+      _loadProfile();
       _loadFloorPlans();
     }
+  }
+
+  Future<void> _loadProfile() async {
+    final user = await _profileService.getUserProfile();
+    setState(() {
+      _profileData = user;
+    });
   }
 
   @override
@@ -556,7 +566,7 @@ class _MapPageState extends State<MapPage> {
         await _handleMarkerTap(marker);
       },
       // Use a bright color for standalone markers
-      selectedColor: isSaved ? StatusUtil.getStatusColor(marker.status) : Colors.blue,
+      selectedColor: isSaved ? ((_profileData?["role"] == "client") ? StatusUtil.getStatusColor(marker.status) : Colors.grey) : Colors.blue,
       isActiveBlinking: true, // Make it blink to be more visible
     );
   }

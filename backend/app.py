@@ -173,7 +173,7 @@ def receive_data():
             logger.info(f"Created new plant entry for MAC: {mac_id}")
 
         # Insert sensor data
-        supabase.table("plant_info").insert({
+        supabase.table("plant_info").upsert({
             "MAC_ID": mac_id,
             "Temp": temp,
             "Moisture": humidity,
@@ -185,7 +185,7 @@ def receive_data():
         current_time = datetime.utcnow().isoformat()
         supabase.table("plant").update({
             "last_intervened": current_time
-        }).eq("id", mac_id).execute()
+        }).eq("mac_id", mac_id).execute()
         
         #print(f"Successfully saved data for MAC: {mac_id}")
         logger.info(f"Successfully saved data for MAC: {mac_id}")

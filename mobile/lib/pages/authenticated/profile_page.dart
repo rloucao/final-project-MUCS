@@ -245,7 +245,7 @@ class _ProfilePageState extends State<ProfilePage> {
           SizedBox(height: 12),
 
           Text(
-            _role ?? 'User',
+            (_role == "client") ? "Employee" : 'User',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,

@@ -28,7 +28,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
   Map<String, dynamic>? _profileData;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
 
     plantData = widget.plantData;

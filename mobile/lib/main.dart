@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/pages/authenticated/auth_home_page.dart';
 import 'package:mobile/pages/login_page.dart';
 import 'package:mobile/pages/signup_page.dart';
+import 'package:mobile/providers/hotel_plants_provider.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
 import 'package:mobile/services/auth_service.dart';
 import 'package:mobile/services/arduino_service.dart';
@@ -16,6 +17,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => AuthService()..autoLogin()),
         // Other providers (e.g., hotel selection)
         ChangeNotifierProvider(create: (_) => SelectedHotelProvider()),
+        ChangeNotifierProvider(create: (_) => HotelPlantsProvider()),
         // Add more providers here as needed
         //ChangeNotifierProvider(create: (_) =>  AuthService()),
         ChangeNotifierProvider(create: (_) => ArduinoService()),

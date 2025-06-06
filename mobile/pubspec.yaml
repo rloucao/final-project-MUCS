@@ -37,6 +37,7 @@ dependencies:
   flutter_svg: ^2.0.17
   shared_preferences: ^2.5.3
   path_provider: ^2.1.5
+  intl: ^0.18.1
   image_picker: ^1.1.2
   web_socket_channel: ^2.4.0
 
@@ -67,22 +68,23 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/green-plant-with-roots.jpg
-    - assets/login-image.jpg
-    - assets/bg.jpg
-    - assets/default_img_plant(1).png
-    - assets/hotels/defaultHotel.jpg
-    - assets/hotels/fct.jpg
-    - assets/hotels/fcsh.jpg
-    - assets/defaultImage.jpg
-    - assets/hotels/sbe.jpg
-    - assets/hotels/ist.jpg
-    - assets/floor_plans/Typical_Dogtrot_Floorplan.svg
-    - assets/floor_plans/map_with_points_example.svg
-    - assets/plant_background.png
-    - assets/profile-bg.png
-    - assets/navbar-bg.png
+   assets:
+     - assets/green-plant-with-roots.jpg
+     - assets/login-image.jpg
+     - assets/bg.jpg
+     - assets/default_img_plant(1).png
+     - assets/hotels/defaultHotel.jpg
+     - assets/hotels/fct.jpg
+     - assets/hotels/fcsh.jpg
+     - assets/defaultImage.jpg
+     - assets/hotels/sbe.jpg
+     - assets/hotels/ist.jpg
+     - assets/floor_plans/Typical_Dogtrot_Floorplan.svg
+     - assets/floor_plans/map_with_points_example.svg
+     - assets/plant_background.png
+     - assets/profile-bg.png
+     - assets/navbar-bg.png
+     - assets/plant_images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

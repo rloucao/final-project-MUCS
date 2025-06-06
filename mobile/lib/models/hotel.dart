@@ -2,12 +2,12 @@
 import 'package:geolocator/geolocator.dart';
 
 class Hotel {
-  final String id;
+  final int id;
   final String name;
   final String? chain;
   final String imagePath;
   final String description;
-  final List<String> floorPlanIds; // IDs of floor plans
+  final List<int> floorPlanIds; // IDs of floor plans
   final double latitude;  // GPS coordinates
   final double longitude; // GPS coordinates
   double? distanceFromUser;
@@ -32,7 +32,7 @@ class Hotel {
       chain: json['chain'],
       imagePath: json['image_url'],
       description: json['description'],
-      floorPlanIds: List<String>.from(json['floor_plan_ids'] ?? []),
+      floorPlanIds: List<int>.from(json['floor_plan_ids'] ?? []),
       latitude: json['latitude'],
       longitude: json['longitude'],
     );

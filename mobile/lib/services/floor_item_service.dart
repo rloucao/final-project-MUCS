@@ -23,7 +23,7 @@ class FloorItemService {
       ) {
     // Create a simple floor item for the marker
     final floorItem = FloorShop(
-      id: int.tryParse(marker.id) ?? 0,
+      id: marker.id ?? 0, //int.tryParse()
       drawingInstructions: DrawingInstructions(
         clickableArea: Path()..addOval(
             Rect.fromCenter(
@@ -35,7 +35,7 @@ class FloorItemService {
         sizeParentSvg: const Size(1000, 1000), // This should match SVG size
       ),
       floor: marker.floorIndex,
-      idPoint: marker.roomId != null ? int.tryParse(marker.roomId!) : null,
+      idPoint: marker.roomId,
     );
 
     return FloorItemWidget(

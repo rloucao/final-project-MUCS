@@ -5,7 +5,9 @@ import 'package:mobile/models/hotel.dart';
 import 'package:mobile/services/hotel_data_service.dart';
 import 'package:mobile/pages/authenticated/map_page.dart';
 import 'package:mobile/components/hotel_card.dart';
+import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
+import '../../providers/hotel_plants_provider.dart';
 import '../../providers/selected_hotel_provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -55,8 +57,8 @@ class _HomePageState extends State<HomePage> {
       );
 
       _currentPosition = position;
-      print(position.latitude);
-      print(position.longitude);
+      //print(position.latitude);
+      //print(position.longitude);
 
       // Calculate distance for each hotel
       for (var hotel in _hotels) {
@@ -100,7 +102,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _setHotel(Hotel hotel) {
-    context.read<SelectedHotelProvider>().setHotel(hotel);
+    final selectedHotelProvider = context.read<SelectedHotelProvider>();
+    final hotelPlantsProvider = context.read<HotelPlantsProvider>();
+
+    selectedHotelProvider.setHotel(hotel);
+    // TODO check if data for hotel is already fetched
+    // marker_sync_service.syncMarkers();
+    hotelPlantsProvider.loadHotelPlants(hotel.id);
   }
 
   @override

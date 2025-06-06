@@ -9,7 +9,7 @@ class ArduinoService with ChangeNotifier {
   StreamSubscription? _subscription;
   String _lastMessage = '';
   bool _isConnected = false;
-  
+
   // Getters
   String get lastMessage => _lastMessage;
   bool get isConnected => _isConnected;
@@ -22,7 +22,7 @@ class ArduinoService with ChangeNotifier {
     try {
       _channel = IOWebSocketChannel.connect(url);
       _isConnected = true;
-      
+
       // Listen for messages from the Arduino
       _subscription = _channel!.stream.listen(
         (message) {
@@ -73,10 +73,11 @@ class ArduinoService with ChangeNotifier {
     notifyListeners();
     print('Disconnected from WebSocket server');
   }
-  
+
   @override
   void dispose() {
     disconnect();
     super.dispose();
   }
 } 
+

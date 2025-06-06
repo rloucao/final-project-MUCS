@@ -150,7 +150,7 @@ def receive_data():
 
 
         # Insert sensor data
-        supabase.table("sensor_data").insert({
+        supabase.table("plant_info").insert({
             "MAC_ID": mac_id,
             "Temp": temp,
             "Moisture": humidity,

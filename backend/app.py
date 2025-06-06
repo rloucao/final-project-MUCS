@@ -121,9 +121,51 @@ def get_plants():
 def receive_data():
     data = request.args.get('data')
     #TODO save data to supabase
-    print(data)
-    
+    # data = 25.60-60.30-450-1234567890
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
 
+    parts = data.split('-')
+    temp = float(parts[0]) if len(parts) > 0 else None
+    humidity = float(parts[1]) if len(parts) > 1 else None
+    light = float(parts[2]) if len(parts) > 2 else None
+    mac_id = float(parts[3]) if len(parts) > 3 else None
+
+    print(data)
+
+    if temp is None or humidity is None or light is None:
+        return jsonify({"error": "Invalid data format"}), 400
+
+    # Save to supabase
+    try:
+        res = supabase.table("plants").select("*").eq("id", mac_id).execute()
+        if not res.data:
+            # Assume there wasn't yet time to set up this plant
+            # So we create a new plant entry
+            supabase.table("plants").insert({
+                "id": mac_id,
+                "name": "['Abutilon hybridum']", # Hardcoded
+                "location": "lobby"  # Hardcoded
+            }).execute()
+
+
+        # Insert sensor data
+        supabase.table("sensor_data").insert({
+            "MAC_ID": mac_id,
+            "Temp": temp,
+            "Moisture": humidity,
+            "Light": light,
+            "Status": "healthy"
+        }).execute()
+
+        # Update the plant's last_intervened time
+        supabase.table("plants").update({
+            "last_intervened": "now()"
+        }).eq("id", mac_id).execute()
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
     return jsonify({"success": True}), 200
 
 

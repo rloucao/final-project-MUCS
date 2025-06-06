@@ -1,6 +1,5 @@
 /*
  * ESP32 Smart Garden System - Integrated Sensors & Actuators
- * Updated for NoxGhost's pin configuration
  * 
  * Components:
  * - DHT11 Temperature & Humidity Sensor
@@ -8,8 +7,6 @@
  * - Water Pump (via Relay)
  * - RGB LED Status Indicator
  * 
- * Author: NoxGhost
- * Date: 2025-06-05
  */
 
 #include <DHT.h>

@@ -3,6 +3,11 @@ from supabase import create_client, Client
 from config import Config
 from flask_cors import CORS
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 app = Flask(__name__)
 CORS(app)#, origins=os.getenv('ORIGINS'))
@@ -136,8 +141,11 @@ def receive_data():
         # Keep MAC ID as string or convert to int, not float
         mac_id = parts[3] if len(parts) > 3 else None
         
-        print(f"Received data: {data}")
-        print(f"Parsed - Temp: {temp}, Humidity: {humidity}, Light: {light}, MAC: {mac_id}")
+        #print(f"Received data: {data}")
+        logger.info(f"Received data: {data}")
+        # Log the parsed values
+        logger.info(f"Parsed values - Temp: {temp}, Humidity: {humidity}, Light: {light}, MAC ID: {mac_id}")
+        #print(f"Parsed - Temp: {temp}, Humidity: {humidity}, Light: {light}, MAC: {mac_id}")
         
         if temp is None or humidity is None or light is None or mac_id is None:
             return jsonify({"error": "Invalid data format"}), 400
@@ -148,20 +156,23 @@ def receive_data():
     # Save to supabase
     try:
         # Check if plant exists
-        print("checking if plant exists in database...")
+        #print("checking if plant exists in database...")
+        logger.info("Checking if plant exists in database...")
         res = supabase.table("plants").select("*").eq("id", mac_id).execute()
-        
-        print(res)
+        #print(res.data)
+        logger.info(f"Plant check result: {res.data}")
 
         if not res.data:
-            # Create new plant entry
+            #print("Plant not found. Inserting new entry...")
+            logger.info("Plant not found. Inserting new entry...")
             supabase.table("plants").insert({
                 "id": mac_id,
-                "name": "['Abutilon hybridum']",  # Hardcoded
-                "location": "lobby"  # Hardcoded
+                "name": "Abutilon hybridum",
+                "location": "lobby"
             }).execute()
-            print(f"Created new plant entry for MAC: {mac_id}")
-        
+            #print(f"Created new plant entry for MAC: {mac_id}")
+            logger.info(f"Created new plant entry for MAC: {mac_id}")
+
         # Insert sensor data
         supabase.table("plant_info").insert({
             "MAC_ID": mac_id,
@@ -177,7 +188,8 @@ def receive_data():
             "last_intervened": current_time
         }).eq("id", mac_id).execute()
         
-        print(f"Successfully saved data for MAC: {mac_id}")
+        #print(f"Successfully saved data for MAC: {mac_id}")
+        logger.info(f"Successfully saved data for MAC: {mac_id}")
         
     except Exception as e:
         print(f"Database error: {str(e)}")

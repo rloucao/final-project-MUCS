@@ -166,7 +166,7 @@ def receive_data():
             logger.info("Plant not found. Inserting new entry...")
             supabase.table("plant").insert({
                 "mac_id": mac_id,
-                "name": ["Abutilon hybridum"],
+                "name": '[''Abutilon hybridum'']', 
                 "location": "lobby"
             }).execute()
             #print(f"Created new plant entry for MAC: {mac_id}")

@@ -158,7 +158,7 @@ def receive_data():
         # Check if plant exists
         #print("checking if plant exists in database...")
         logger.info("Checking if plant exists in database...")
-        res = supabase.table("plants").select("*").eq("id", mac_id).execute()
+        res = supabase.table("plant").select("*").eq("id", mac_id).execute()
         #print(res.data)
         logger.info(f"Plant check result: {res.data}")
 

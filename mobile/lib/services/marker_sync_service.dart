@@ -16,10 +16,7 @@ class MarkerSyncService {
     if (response.statusCode == 200) {
       // decode the http response body to a JSON object
       final decoded = jsonDecode(response.body);
-      // print(decoded);
       final List<dynamic> data = decoded['markers'];
-      // print(data);
-      // print("======================");
       // transform each marker JSON into a MapMarker object and return a list
       return data.map((markerJson) => MapMarker.fromJson(markerJson)).toList();
     } else {
@@ -50,11 +47,6 @@ class MarkerSyncService {
 
         // check if both markers exist
         if (serverMarker != null && diskMarker != null) {
-
-          /*// debug print statements
-          print("Comparing markers with ID: $id");
-          print("Server Marker timestamp: ${serverMarker.lastUpdated}, status: ${serverMarker.isActive}");
-          print("Disk Marker timestamp: ${diskMarker.lastUpdated}, status: ${diskMarker.isActive}\n\n");*/
           // both exist, compare timestamps
           if ((serverMarker.lastUpdated.toLocal()).isAfter(diskMarker.lastUpdated)) {
             // remote marker is newer, update local marker
@@ -91,17 +83,6 @@ class MarkerSyncService {
 
         }
       }
-
-      /*print("==> Markers from server:\n");
-      for (var marker in markersFromServer) {
-        print(marker.toJson());
-      }
-      print("\n\n");
-      print("==> Markers from local storage:\n");
-      for (var marker in markersFromDisk) {
-        print(marker.toJson());
-      }*/
-
       // save updated markers to disk
       mergedMarkers = diskMap.values.toList();
       await StorageUtil.saveMarkers(mergedMarkers);
@@ -162,8 +143,6 @@ class MarkerSyncService {
 
     if (response.statusCode == 200) {
       print("Marker updated successfully on server: ${marker.toJson()}");
-    } /*else {
-      print("Failed to update marker on server: ${marker.toJson()}");
-    }*/
+    }
   }
 }

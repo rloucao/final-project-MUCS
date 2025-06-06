@@ -45,12 +45,6 @@ class _AuthenticatedHome extends State<AuthenticatedHome>{
     final localPlantDetails = await StorageUtil.loadPlantDetails();
     if (localPlantDetails.isNotEmpty) {
       print("Plant details already exist in local storage.");
-
-      /*// print local plant details
-      localPlantDetails.forEach((plant) {
-        print("ID: ${plant.id}, Common Name: ${plant.common_name}");
-      });*/
-
       return;
     }
 

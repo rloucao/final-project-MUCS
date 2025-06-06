@@ -232,8 +232,6 @@ def get_plant_details(plant_id):
                 except Exception:
                     pass  # Leave it as string if parsing fails
 
-        #print(f"{data}")
-
         return jsonify({
             "success": True,
             "data": data

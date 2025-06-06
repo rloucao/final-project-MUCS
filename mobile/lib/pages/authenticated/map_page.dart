@@ -59,7 +59,6 @@ class _MapPageState extends State<MapPage> {
     super.initState();
 
     // Delay the initialization to ensure the context is ready
-
     if (widget.hotel != null) {
       _selectedHotel = widget.hotel;
       final hotelId = _selectedHotel!.id;
@@ -95,7 +94,6 @@ class _MapPageState extends State<MapPage> {
 
   @override
   void dispose() {
-    // Dispose any controllers or streams here if you have them
     super.dispose();
   }
 
@@ -108,7 +106,6 @@ class _MapPageState extends State<MapPage> {
     });
 
     try {
-      //print("Hotel Plan ID Datatype: ${_selectedHotel!.id.runtimeType}");
       final floorPlans = _hotelService.getFloorPlansForHotel(_selectedHotel!.id);
 
       setState(() {
@@ -142,7 +139,7 @@ class _MapPageState extends State<MapPage> {
 
       final String svgContent = await rootBundle.loadString(svgPath);
 
-      if (!mounted) return; // <- important check here
+      if (!mounted) return;
 
       setState(() {
         _svgContent = svgContent;
@@ -171,7 +168,7 @@ class _MapPageState extends State<MapPage> {
     if (_selectedHotel == null) return;
 
     try {
-      final savedMarkers = await MarkerSyncService.syncMarkers(null); //StorageUtil.loadMarkers();
+      final savedMarkers = await MarkerSyncService.syncMarkers(null);
 
       final filteredMarkers = savedMarkers.where((marker) =>
       marker.hotelId == _selectedHotel!.id &&
@@ -215,7 +212,6 @@ class _MapPageState extends State<MapPage> {
 
       final updatedMarkers = [...otherMarkers, ..._markers];
 
-      //await StorageUtil.saveMarkers(updatedMarkers);
       final syncedMarkers = await MarkerSyncService.syncMarkers(updatedMarkers);
 
       setState(() {
@@ -230,23 +226,11 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // Reset all markers for the current floor
-  Future<void> _resetMarkers() async {
-    setState(() {
-      _markers = [];
-      _statusMessage = 'All markers removed';
-    });
-
-    await _saveMarkers();
-  }
-
-
-
   // Handle floor item tap
   Future<void> _handleFloorItemTap(FloorItem item) async {
     if (_selectedHotel == null) return;
 
-    final int itemId = item.id; //.toString();
+    final int itemId = item.id;
     print('Floor item tapped: $itemId, Edit mode: $_editMode');
 
     if (!_editMode) {
@@ -260,7 +244,6 @@ class _MapPageState extends State<MapPage> {
     final existingMarkerIndex = _markers.indexWhere((m) => m.roomId == itemId);
     final existingTemporaryMarkerIndex = _temporaryMarkers.indexWhere((m) => m.roomId == itemId);
 
-    // print("_handleFloorItemTap: existingMarkerIndex: $existingMarkerIndex, existingTemporaryMarkerIndex: $existingTemporaryMarkerIndex");
     if (existingMarkerIndex < 0 && existingTemporaryMarkerIndex < 0) {
       // Show plant selector dialog
       final selectedPlant = await Navigator.push<String>(
@@ -281,7 +264,7 @@ class _MapPageState extends State<MapPage> {
       final centerY = bounds.center.dy;
 
       final newMarker = MapMarker(
-        id: DateTime.now().millisecondsSinceEpoch, //.toString(),
+        id: DateTime.now().millisecondsSinceEpoch,
         x: centerX,
         y: centerY,
         hotelId: _selectedHotel!.id,
@@ -294,17 +277,10 @@ class _MapPageState extends State<MapPage> {
       );
 
       setState(() {
-        // _markers.add(newMarker);
         _temporaryMarkers.add(newMarker);
         _statusMessage = 'Marker added to room $itemId';
       });
-    } /*else {
-      // Remove existing marker
-      setState(() {
-        _markers.removeAt(existingMarkerIndex);
-        _statusMessage = 'Marker removed from room $itemId';
-      });
-    }*/
+    }
 
     setState(() {
       _mapKey = UniqueKey(); // Force full rebuild
@@ -318,7 +294,6 @@ class _MapPageState extends State<MapPage> {
     if (!_editMode) {
       // Show marker details
       if (marker.roomId != null) {
-        // TODO nasty bug: first marker tap after loading app has no provider infos
         final hotelPlants = Provider.of<HotelPlantsProvider>(context, listen: false).hotelPlants;
         if (hotelPlants.isEmpty) {
           setState(() {
@@ -350,10 +325,8 @@ class _MapPageState extends State<MapPage> {
           // After closing the dialog, reload markers to refresh state
           await _loadMarkers();
           setState(() {
-            _mapKey = UniqueKey(); // Force complete rebuild of the map widget
+            _mapKey = UniqueKey();
           });
-          // TODO visual TabMarkers should be updated here
-
         } else {
           setState(() {
             _statusMessage = 'No plant data found for marker';
@@ -373,9 +346,8 @@ class _MapPageState extends State<MapPage> {
       _statusMessage = 'Temporary marker removed';
     });
 
-    // await _saveMarkers();
     setState(() {
-      _mapKey = UniqueKey(); // Force complete rebuild of the map widget
+      _mapKey = UniqueKey();
     });
   }
 
@@ -453,7 +425,6 @@ class _MapPageState extends State<MapPage> {
     return Stack(
       children: [
         _buildFloorMap(),
-
         // Status message at the bottom
         if (_statusMessage.isNotEmpty)
           Positioned(
@@ -514,7 +485,7 @@ class _MapPageState extends State<MapPage> {
     return Stack(
       children: [
         FloorMapWidget(
-          key: _mapKey, // Add this key parameter
+          key: _mapKey,
           _svgContent,
           // Combine room items and marker indicators
           [...floorItemWidgets, ...markerWidgets],
@@ -565,9 +536,8 @@ class _MapPageState extends State<MapPage> {
       onTap: (item) async {
         await _handleMarkerTap(marker);
       },
-      // Use a bright color for standalone markers
-      selectedColor: isSaved ? ((_profileData?["role"] == "client") ? StatusUtil.getStatusColor(marker.status) : Colors.grey) : Colors.blue,
-      isActiveBlinking: true, // Make it blink to be more visible
+     selectedColor: isSaved ? ((_profileData?["role"] == "client") ? StatusUtil.getStatusColor(marker.status) : Colors.grey) : Colors.blue,
+      isActiveBlinking: true,
     );
   }
 
@@ -629,632 +599,3 @@ class _MapPageState extends State<MapPage> {
     );
   }
 }
-
-
-
-
-/*
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:floors_map_widget/floors_map_widget.dart';
-import 'package:mobile/models/hotel.dart';
-import 'package:mobile/models/floor_plan.dart';
-import 'package:mobile/models/map_marker.dart';
-import 'package:mobile/providers/hotel_plants_provider.dart';
-import 'package:mobile/services/hotel_data_service.dart';
-import 'package:mobile/services/floor_item_service.dart';
-import 'package:mobile/services/marker_sync_service.dart';
-import 'package:mobile/utils/storage_util.dart';
-import 'package:provider/provider.dart';
-import 'package:mobile/providers/selected_hotel_provider.dart';
-import 'package:mobile/utils/empty_states.dart';
-import 'package:mobile/pages/authenticated/plant_selector.dart';
-import 'package:mobile/pages/authenticated/plant_details_dialog.dart';
-
-import '../../utils/status_util.dart';
-
-class MapPage extends StatefulWidget {
-  final Hotel? hotel;
-  const MapPage({Key? key, this.hotel}) : super(key: key);
-
-  @override
-  _MapPageState createState() => _MapPageState();
-}
-
-class _MapPageState extends State<MapPage> {
-  final HotelDataService _hotelService = HotelDataService();
-  final FloorItemService _floorItemService = FloorItemService();
-
-  List<FloorPlan> _floorPlans = [];
-  int _currentFloorIndex = 0;
-  Hotel? _selectedHotel;
-  bool _editMode = false;
-  List<MapMarker> _markers = [];
-  List<MapMarker> _temporaryMarkers = []; // For temporary marker storage
-  bool _isLoading = false;
-
-  // SVG content for the current floor
-  String _svgContent = '';
-  // Floor items from the SVG
-  List<FloorItem> _floorItems = [];
-  // Navigation points from the SVG
-  List<FloorPoint> _navigationPoints = [];
-  // Selected room/item ID for highlighting
-  int? _selectedRoomId;
-  // Status message to display at the bottom
-  String _statusMessage = '';
-  Key _mapKey = UniqueKey();
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Delay the initialization to ensure the context is ready
-
-    if (widget.hotel != null) {
-      _selectedHotel = widget.hotel;
-      final hotelId = _selectedHotel!.id;
-      print("Selected hotel ID: $hotelId");
-
-      _loadFloorPlans();
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    if (_selectedHotel == null) {
-      final selectedHotelProvider = Provider.of<SelectedHotelProvider>(context, listen: false);
-      final providerHotel = selectedHotelProvider.selectedHotel;
-
-      if (providerHotel != null && (_selectedHotel == null || _selectedHotel!.id != providerHotel.id)) {
-        setState(() {
-          _selectedHotel = providerHotel;
-          _loadFloorPlans();
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    // Dispose any controllers or streams here if you have them
-    super.dispose();
-  }
-
-  // Load floor plans from hotel data service
-  void _loadFloorPlans() {
-    if (_selectedHotel == null) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      //print("Hotel Plan ID Datatype: ${_selectedHotel!.id.runtimeType}");
-      final floorPlans = _hotelService.getFloorPlansForHotel(_selectedHotel!.id);
-
-      setState(() {
-        _floorPlans = floorPlans;
-        _currentFloorIndex = 0;
-        _isLoading = false;
-      });
-
-      if (_floorPlans.isNotEmpty) {
-        _loadSvgContent();
-      }
-    } catch (e) {
-      print('Error loading floor plans: $e');
-      setState(() {
-        _floorPlans = [];
-        _isLoading = false;
-      });
-    }
-  }
-
-  // Load SVG content for the current floor
-  Future<void> _loadSvgContent() async {
-    if (_floorPlans.isEmpty || _currentFloorIndex >= _floorPlans.length) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final currentFloorPlan = _floorPlans[_currentFloorIndex];
-      final String svgPath = currentFloorPlan.svgImagePath;
-
-      // Load SVG content from asset
-      final String svgContent = await rootBundle.loadString(svgPath);
-
-      setState(() {
-        _svgContent = svgContent;
-
-        // Parse SVG to extract floor items and navigation points
-        _floorItems = _floorItemService.getFloorItemsFromSvg(svgContent);
-        _navigationPoints = _floorItemService.getPointsFromSvg(svgContent);
-
-        _isLoading = false;
-      });
-
-      // Load markers after SVG is loaded
-      _loadMarkers();
-    } catch (e) {
-      print('Error loading SVG content: $e');
-      setState(() {
-        _svgContent = '';
-        _floorItems = [];
-        _navigationPoints = [];
-        _isLoading = false;
-      });
-    }
-  }
-
-  // Load markers from storage
-  Future<void> _loadMarkers() async {
-    if (_selectedHotel == null) return;
-
-    try {
-      final savedMarkers = await MarkerSyncService.syncMarkers(null); //StorageUtil.loadMarkers();
-
-      final filteredMarkers = savedMarkers.where((marker) =>
-      marker.hotelId == _selectedHotel!.id &&
-          marker.floorIndex == _currentFloorIndex &&
-          marker.isActive // Only include active markers
-      ).toList();
-      // debug print marker ids
-      print('Loaded marker ids for hotel ${_selectedHotel!.id} on floor $_currentFloorIndex: ${filteredMarkers.map((m) => m.id).join(', ')}');
-
-      setState(() {
-        _markers = filteredMarkers;
-        _mapKey = UniqueKey(); // Force complete rebuild of the map widget
-      });
-
-    } catch (e) {
-      print('Error loading markers: $e');
-      setState(() {
-        _markers = [];
-      });
-    }
-  }
-
-  // Save markers to storage
-  Future<void> _saveMarkers() async {
-    try {
-      final allMarkers = await StorageUtil.loadMarkers();
-
-      // markers that are not part of this hotel floor
-      final otherMarkers = allMarkers.where((marker) =>
-      marker.hotelId != _selectedHotel!.id ||
-          marker.floorIndex != _currentFloorIndex
-      ).toList();
-
-      // add temporary markers to the existing markers, if they are unique, and empty the temporary list
-      _temporaryMarkers.forEach((tempMarker) {
-        if (!_markers.any((m) => m.id == tempMarker.id)) {
-          _markers.add(tempMarker);
-        }
-      });
-      _temporaryMarkers.clear(); // Clear temporary markers after saving
-
-      final updatedMarkers = [...otherMarkers, ..._markers];
-
-      //await StorageUtil.saveMarkers(updatedMarkers);
-      final syncedMarkers = await MarkerSyncService.syncMarkers(updatedMarkers);
-
-      setState(() {
-        _markers = syncedMarkers;
-        _mapKey = UniqueKey();
-      });
-      print('Markers saved: ${_markers.length}');
-      // reload page
-
-    } catch (e) {
-      print('Error saving markers: $e');
-    }
-  }
-
-  // Reset all markers for the current floor
-  Future<void> _resetMarkers() async {
-    setState(() {
-      _markers = [];
-      _statusMessage = 'All markers removed';
-    });
-
-    await _saveMarkers();
-  }
-
-
-
-  // Handle floor item tap
-  Future<void> _handleFloorItemTap(FloorItem item) async {
-    if (_selectedHotel == null) return;
-
-    final int itemId = item.id; //.toString();
-    print('Floor item tapped: $itemId, Edit mode: $_editMode');
-
-    if (!_editMode) {
-      setState(() {
-        _selectedRoomId = itemId;
-        _statusMessage = 'Room: $itemId';
-      });
-      return;
-    }
-
-    final existingMarkerIndex = _markers.indexWhere((m) => m.roomId == itemId);
-    final existingTemporaryMarkerIndex = _temporaryMarkers.indexWhere((m) => m.roomId == itemId);
-
-    // print("_handleFloorItemTap: existingMarkerIndex: $existingMarkerIndex, existingTemporaryMarkerIndex: $existingTemporaryMarkerIndex");
-    if (existingMarkerIndex < 0 && existingTemporaryMarkerIndex < 0) {
-      // Show plant selector dialog
-      final selectedPlant = await Navigator.push<String>(
-        context,
-        MaterialPageRoute(builder: (context) => PlantSelector()),
-      );
-
-      if (selectedPlant == null) {
-        setState(() {
-          _statusMessage = 'Marker creation cancelled';
-        });
-        return;
-      }
-
-      // Get center point of the room
-      final Rect bounds = item.drawingInstructions.clickableArea.getBounds();
-      final centerX = bounds.center.dx;
-      final centerY = bounds.center.dy;
-
-      final newMarker = MapMarker(
-        id: DateTime.now().millisecondsSinceEpoch, //.toString(),
-        x: centerX,
-        y: centerY,
-        hotelId: _selectedHotel!.id,
-        floorIndex: _currentFloorIndex,
-        roomId: itemId,
-        typeId: int.parse(selectedPlant),
-        lastUpdated: DateTime.now().toUtc(),
-        status: 0, // Default status
-        isActive: true, // Default to active
-      );
-
-      setState(() {
-        // _markers.add(newMarker);
-        _temporaryMarkers.add(newMarker);
-        _statusMessage = 'Marker added to room $itemId';
-      });
-    } */
-/*else {
-      // Remove existing marker
-      setState(() {
-        _markers.removeAt(existingMarkerIndex);
-        _statusMessage = 'Marker removed from room $itemId';
-      });
-    }*//*
-
-
-    setState(() {
-      _mapKey = UniqueKey(); // Force full rebuild
-    });
-  }
-
-
-  // Handle marker tap
-  Future<void> _handleMarkerTap(MapMarker marker) async {
-
-    if (!_editMode) {
-      // Show marker details
-      if (marker.roomId != null) {
-        // TODO nasty bug: first marker tap after loading app has no provider infos
-        final hotelPlants = Provider.of<HotelPlantsProvider>(context, listen: false).hotelPlants;
-        if (hotelPlants.isEmpty) {
-          setState(() {
-            _statusMessage = 'Plant Details currently unavailable';
-          });
-          return;
-        }
-
-        final plantData = hotelPlants.firstWhere(
-          (p) => p['id'] == marker.id,
-          orElse: () => {},
-        );
-
-        if (plantData.isNotEmpty) {
-          final bool? isDeleted = await showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return PlantDetailDialog(
-                plantId: marker.typeId,
-                plantData: plantData,
-              );
-            },
-          );
-
-          // remove marker from markers
-          if (isDeleted != null && isDeleted) {
-            marker.isActive = false;
-          }
-          // After closing the dialog, reload markers to refresh state
-          await _loadMarkers();
-          setState(() {
-            _mapKey = UniqueKey(); // Force complete rebuild of the map widget
-          });
-          // TODO visual TabMarkers should be updated here
-
-        } else {
-          setState(() {
-            _statusMessage = 'No plant data found for marker';
-          });
-        }
-      } else {
-        setState(() {
-          _statusMessage = 'Marker at position (${marker.x.toInt()}, ${marker.y.toInt()})';
-        });
-      }
-      return;
-    }
-
-    // In edit mode, remove the marker
-    setState(() {
-      _temporaryMarkers.removeWhere((m) => m.id == marker.id);
-      _statusMessage = 'Temporary marker removed';
-    });
-
-    // await _saveMarkers();
-    setState(() {
-      _mapKey = UniqueKey(); // Force complete rebuild of the map widget
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_selectedHotel == null) {
-      return EmptyStates.noHotelSelected();
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_selectedHotel?.name ?? 'Hotel Map'),
-        actions: [
-          // Add an indicator for edit mode
-          if (_editMode)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Center(
-                child: Text(
-                  'Edit Mode',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          if (_floorPlans.isNotEmpty && _floorPlans.length > 1)
-            PopupMenuButton<int>(
-              icon: Icon(Icons.layers),
-              tooltip: 'Select Floor',
-              onSelected: (index) {
-                setState(() {
-                  _currentFloorIndex = index;
-                  _selectedRoomId = null;
-                });
-                _loadSvgContent();
-              },
-              itemBuilder: (context) {
-                return List.generate(
-                  _floorPlans.length,
-                      (index) => PopupMenuItem(
-                    value: index,
-                    child: Text(_floorPlans[index].name),
-                  ),
-                );
-              },
-            ),
-        ],
-      ),
-      body: _buildBody(),
-      floatingActionButton:
-      _selectedHotel != null ? _buildFloatingButtons() : null,
-    );
-  }
-
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
-    }
-
-    if (_selectedHotel == null) {
-      return EmptyStates.noHotelSelected();
-    }
-
-    if (_floorPlans.isEmpty) {
-      return Center(child: Text('No floor plans available for this hotel'));
-    }
-
-    if (_svgContent.isEmpty) {
-      return Center(child: Text('Failed to load floor plan'));
-    }
-
-    return Stack(
-      children: [
-        _buildFloorMap(),
-
-        // Status message at the bottom
-        if (_statusMessage.isNotEmpty)
-          Positioned(
-            bottom: 16,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _statusMessage,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  // Build floor map using floors_map_widget
-  Widget _buildFloorMap() {
-    // Create FloorItemWidgets for each floor item
-    final List<FloorItemWidget> floorItemWidgets = _floorItems.map((item) {
-      // Check if this item has a marker
-      final hasMarker = _markers.any((m) => m.roomId == item.id.toString());
-
-      final isSelected = _selectedRoomId == item.id.toString();
-
-      return FloorItemWidget(
-        item,
-        onTap: _handleFloorItemTap,
-        // Use different colors based on marker status and selection
-        selectedColor: hasMarker
-            ? Colors.green.withOpacity(0.5) : null, // Green for rooms with markers
-        isActiveBlinking: isSelected,
-      );
-    }).toList();
-
-    // Create visual marker widgets for ALL markers (all of which have room associations)
-    List<FloorItemWidget> markerWidgets = _markers
-        .where((marker) => marker.isActive).map((marker) {
-      return _buildMapMarkerWidget(marker, true);
-    }).toList();
-    final List<FloorItemWidget> temporaryMarkerWidgets = _temporaryMarkers
-        .where((marker) => marker.isActive).map((marker) {
-      return _buildMapMarkerWidget(marker, false);
-    }).toList();
-    markerWidgets.addAll(temporaryMarkerWidgets);
-
-    return Stack(
-      children: [
-        FloorMapWidget(
-          key: _mapKey, // Add this key parameter
-          _svgContent,
-          // Combine room items and marker indicators
-          [...floorItemWidgets, ...markerWidgets],
-          unvisiblePoints: true,
-        ),
-        if (_editMode)
-          Positioned(
-            top: 16,
-            left: 16,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                'Edit Mode: Tap rooms to add plant markers',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  FloorItemWidget _buildMapMarkerWidget(MapMarker marker, bool isSaved) {
-    // Create a simple floor item for the marker
-    final floorItem = FloorShop(
-      id: marker.id ?? 0, // int.tryParse()
-      drawingInstructions: DrawingInstructions(
-        // Create a small clickable area at the marker's position
-        clickableArea: Path()..addOval(
-            Rect.fromCenter(
-              center: Offset(marker.x, marker.y),
-              width: 30,
-              height: 30,
-            )
-        ),
-        sizeParentSvg: _floorItems.isNotEmpty
-            ? _floorItems.first.drawingInstructions.sizeParentSvg
-            : Size(1000, 1000),
-      ),
-      floor: marker.floorIndex,
-    );
-
-    return FloorItemWidget(
-      floorItem,
-      onTap: (item) async {
-        await _handleMarkerTap(marker);
-      },
-      // Use a bright color for standalone markers
-      selectedColor: isSaved ? StatusUtil.getStatusColor(marker.status) : Colors.blue,
-      isActiveBlinking: true, // Make it blink to be more visible
-    );
-  }
-
-  Widget _buildFloatingButtons() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        // Reset button (only visible in edit mode)
-        if (_editMode)
-          FloatingActionButton(
-            heroTag: 'reset',
-            // leave edit mode without saving changes
-            onPressed: () {
-              setState(() {
-                _editMode = false;
-              });
-              _statusMessage = 'Edit mode disabled, changes not saved';
-              print('Edit mode toggled: false');
-            },
-            backgroundColor: Colors.red,
-            mini: true,
-            tooltip: 'Undo changes and leave edit mode',
-            child: Icon(Icons.cancel),
-          ),
-        SizedBox(height: 16),
-        // Edit / Save toggle button
-        FloatingActionButton(
-          heroTag: 'edit_save',
-          onPressed: () {
-            setState(() {
-              if (_editMode) {
-                _saveMarkers();
-                _statusMessage = 'Markers saved';
-              } else {
-                _statusMessage = 'Edit mode enabled';
-              }
-              _editMode = !_editMode;
-            });
-            print('Edit mode toggled: $_editMode');
-          },
-          backgroundColor: _editMode ? Colors.green : Colors.blue,
-          child: Icon(_editMode ? Icons.save : Icons.edit),
-        ),
-        // Debug button
-        SizedBox(height: 16),
-        FloatingActionButton(
-          heroTag: 'debug',
-          onPressed: () {
-            setState(() {
-              _statusMessage = 'Current markers: ${_markers.length}';
-            });
-          },
-          mini: true,
-          backgroundColor: Colors.grey,
-          child: Icon(Icons.info),
-        ),
-      ],
-    );
-  }
-}
-*/

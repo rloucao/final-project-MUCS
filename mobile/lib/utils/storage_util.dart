@@ -78,9 +78,6 @@ class StorageUtil {
   static Future<List<MapMarker>> loadMarkers() async {
     final prefs = await SharedPreferences.getInstance();
     final markersString = prefs.getString(_markerKey) ?? '[]';
-    // print("Markers String: $markersString");
-
-    //MarkerSyncService.syncMarkers();
 
     try {
       final List<dynamic> markersList = jsonDecode(markersString);
@@ -113,7 +110,6 @@ class StorageUtil {
   static Future<List<PlantDetail>> loadPlantDetails() async {
     final prefs = await SharedPreferences.getInstance();
     final plantDetailsString = prefs.getString(_plantDetailsKey) ?? '[]';
-    //print("Plant Details String: $plantDetailsString");
 
     try {
       final List<dynamic> plantDetailsList = jsonDecode(plantDetailsString);

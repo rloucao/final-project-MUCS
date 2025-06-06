@@ -57,8 +57,6 @@ class _HomePageState extends State<HomePage> {
       );
 
       _currentPosition = position;
-      //print(position.latitude);
-      //print(position.longitude);
 
       // Calculate distance for each hotel
       for (var hotel in _hotels) {
@@ -106,8 +104,6 @@ class _HomePageState extends State<HomePage> {
     final hotelPlantsProvider = context.read<HotelPlantsProvider>();
 
     selectedHotelProvider.setHotel(hotel);
-    // TODO check if data for hotel is already fetched
-    // marker_sync_service.syncMarkers();
     hotelPlantsProvider.loadHotelPlants(hotel.id);
   }
 

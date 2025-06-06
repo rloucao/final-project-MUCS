@@ -26,22 +26,6 @@ class _PlantsPageState extends State<PlantsPage> {
   void initState() {
     super.initState();
     _loadProfile();
-    // Delay the initialization to ensure the context is ready
-    /*WidgetsBinding.instance.addPostFrameCallback((_) {
-      final selectedHotel = Provider.of<SelectedHotelProvider>(context, listen: false).selectedHotel;
-      if (selectedHotel != null) {
-        final hotelPlantsProvider = Provider.of<HotelPlantsProvider>(context, listen: false);
-        setState(() {
-          _hotelPlantsFuture = hotelPlantsProvider.loadHotelPlants(selectedHotel.id);
-        });
-      }
-      else {
-        // If no hotel is selected, set an empty future
-        setState(() {
-          _hotelPlantsFuture = Future.value([]);
-        });
-      }
-    });*/
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

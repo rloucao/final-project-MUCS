@@ -357,13 +357,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-
-
           ),
 
           SizedBox(height: 30),
-
-
           ElevatedButton.icon(
               onPressed:
               _sendMessageToArduinoOff,
@@ -376,8 +372,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-
-
           )
         ],
       ),
@@ -583,11 +577,6 @@ class _ProfilePageState extends State<ProfilePage> {
         });
         
         animatedSnackbar.show(context: context, message: "Profile picture updated", type: SnackbarType.success);
-        
-
-        // await _profileService.uploadProfileImage(File(image.path));
-        // Then refresh the profile
-        // await _loadProfile();
       }
     } catch (e) {
       print("Error picking image: $e");

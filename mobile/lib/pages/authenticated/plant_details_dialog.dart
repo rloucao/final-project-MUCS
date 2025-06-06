@@ -35,8 +35,6 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
     imageUrl = "assets/plant_images/${widget.plantId}.jpg";
     _loadProfile();
     isLoading = false;
-
-    //setUser();
   }
 
   Future<void> _loadProfile() async {
@@ -45,12 +43,6 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
       _profileData = user;
     });
   }
-
-  /*Future<void> setUser() async {
-    final user = await _profileService.getUserProfile();
-    role = user?['role'];
-    print("########## User role: ${role}");
-  }*/
 
   bool isNonEmptyList(dynamic value) =>
       value is List && value.isNotEmpty;
@@ -62,8 +54,6 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
         // Try JSON decoding first
         return (jsonDecode(value) as List<dynamic>).join(", ");
       } catch (e) {
-        //print("JSON decoding failed: $e");
-
         // Fallback: Try to parse a Dart-like list string (e.g., "['Brazil']")
         final dartListPattern = RegExp(r"\['(.*?)'\]");
         final matches = dartListPattern.allMatches(value);

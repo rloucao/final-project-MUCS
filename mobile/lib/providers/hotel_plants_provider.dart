@@ -18,7 +18,7 @@ class HotelPlantsProvider with ChangeNotifier {
     _hotelId = hotelId;
 
     try {
-      // Load markers and plant details from disk (reuse your existing logic)
+      // Load markers and plant details from disk
       final markersFromDisk = await StorageUtil.loadMarkers();
       final plantDetailsFromDisk = await StorageUtil.loadPlantDetails();
 

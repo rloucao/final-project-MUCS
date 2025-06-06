@@ -15,7 +15,7 @@ class Plant {
     return Plant(
       id: json['id'].toString(),
       commonName: json['common_name'] ?? '',
-      imageUrl: // TODO change to local
+      imageUrl:
       "assets/plant_images/${json['id']}.jpg",
     );
   }

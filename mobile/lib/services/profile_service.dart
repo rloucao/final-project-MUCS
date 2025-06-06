@@ -13,7 +13,6 @@ class ProfileService {
     if (token == null) {
       throw Exception('No authentication token found');
     }
-
     return _storageUtil.getUser();
   }
 

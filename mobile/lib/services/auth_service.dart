@@ -9,7 +9,6 @@ class AuthService extends ChangeNotifier{
   bool isAuthenticated = false;
 
   void autoLogin() {
-    // Set your auth state to "authenticated"
     isAuthenticated = true;
     notifyListeners();
   }

@@ -165,8 +165,8 @@ def receive_data():
         if not res.data:
             #print("Plant not found. Inserting new entry...")
             logger.info("Plant not found. Inserting new entry...")
-            supabase.table("plants").insert({
-                "id": mac_id,
+            supabase.table("plant").insert({
+                "mac_id": mac_id,
                 "name": "Abutilon hybridum",
                 "location": "lobby"
             }).execute()
@@ -184,7 +184,7 @@ def receive_data():
         
         # Update the plant's last_intervened time with proper timestamp
         current_time = datetime.utcnow().isoformat()
-        supabase.table("plants").update({
+        supabase.table("plant").update({
             "last_intervened": current_time
         }).eq("id", mac_id).execute()
         

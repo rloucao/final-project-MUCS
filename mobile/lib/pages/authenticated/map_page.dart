@@ -594,23 +594,24 @@ class _MapPageState extends State<MapPage> {
           ),
         SizedBox(height: 16),
         // Edit / Save toggle button
-        FloatingActionButton(
-          heroTag: 'edit_save',
-          onPressed: () {
-            setState(() {
-              if (_editMode) {
-                _saveMarkers();
-                _statusMessage = 'Markers saved';
-              } else {
-                _statusMessage = 'Edit mode enabled';
-              }
-              _editMode = !_editMode;
-            });
-            print('Edit mode toggled: $_editMode');
-          },
-          backgroundColor: _editMode ? Colors.green : Colors.blue,
-          child: Icon(_editMode ? Icons.save : Icons.edit),
-        ),
+        if (_profileData?["role"] == "client")
+          FloatingActionButton(
+            heroTag: 'edit_save',
+            onPressed: () {
+              setState(() {
+                if (_editMode) {
+                  _saveMarkers();
+                  _statusMessage = 'Markers saved';
+                } else {
+                  _statusMessage = 'Edit mode enabled';
+                }
+                _editMode = !_editMode;
+              });
+              print('Edit mode toggled: $_editMode');
+            },
+            backgroundColor: _editMode ? Colors.green : Colors.blue,
+            child: Icon(_editMode ? Icons.save : Icons.edit),
+          ),
         // Debug button
         SizedBox(height: 16),
         FloatingActionButton(

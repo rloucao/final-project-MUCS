@@ -117,38 +117,48 @@ def get_plants():
         return jsonify({"success": False, "error": str(e)}, 500)
 
 
+from datetime import datetime
+
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
-    #TODO save data to supabase
     # data = 25.60-60.30-450-1234567890
+    
     if not data:
         return jsonify({"error": "No data provided"}), 400
-
+    
     parts = data.split('-')
-    temp = float(parts[0]) if len(parts) > 0 else None
-    humidity = float(parts[1]) if len(parts) > 1 else None
-    light = float(parts[2]) if len(parts) > 2 else None
-    mac_id = float(parts[3]) if len(parts) > 3 else None
-
-    print(data)
-
-    if temp is None or humidity is None or light is None:
-        return jsonify({"error": "Invalid data format"}), 400
-
+    
+    try:
+        temp = float(parts[0]) if len(parts) > 0 else None
+        humidity = float(parts[1]) if len(parts) > 1 else None
+        light = float(parts[2]) if len(parts) > 2 else None
+        # Keep MAC ID as string or convert to int, not float
+        mac_id = parts[3] if len(parts) > 3 else None
+        
+        print(f"Received data: {data}")
+        print(f"Parsed - Temp: {temp}, Humidity: {humidity}, Light: {light}, MAC: {mac_id}")
+        
+        if temp is None or humidity is None or light is None or mac_id is None:
+            return jsonify({"error": "Invalid data format"}), 400
+            
+    except (ValueError, IndexError) as e:
+        return jsonify({"error": f"Data parsing error: {str(e)}"}), 400
+    
     # Save to supabase
     try:
+        # Check if plant exists
         res = supabase.table("plants").select("*").eq("id", mac_id).execute()
+        
         if not res.data:
-            # Assume there wasn't yet time to set up this plant
-            # So we create a new plant entry
+            # Create new plant entry
             supabase.table("plants").insert({
                 "id": mac_id,
-                "name": "['Abutilon hybridum']", # Hardcoded
+                "name": "['Abutilon hybridum']",  # Hardcoded
                 "location": "lobby"  # Hardcoded
             }).execute()
-
-
+            print(f"Created new plant entry for MAC: {mac_id}")
+        
         # Insert sensor data
         supabase.table("plant_info").insert({
             "MAC_ID": mac_id,
@@ -157,17 +167,20 @@ def receive_data():
             "Light": light,
             "Status": "healthy"
         }).execute()
-
-        # Update the plant's last_intervened time
+        
+        # Update the plant's last_intervened time with proper timestamp
+        current_time = datetime.utcnow().isoformat()
         supabase.table("plants").update({
-            "last_intervened": "now()"
+            "last_intervened": current_time
         }).eq("id", mac_id).execute()
-
+        
+        print(f"Successfully saved data for MAC: {mac_id}")
+        
     except Exception as e:
+        print(f"Database error: {str(e)}")
         return jsonify({"error": str(e)}), 500
     
     return jsonify({"success": True}), 200
-
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)

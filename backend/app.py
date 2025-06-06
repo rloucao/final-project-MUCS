@@ -120,7 +120,9 @@ def get_plants():
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
+    #TODO save data to supabase
     print(data)
+    
 
     return jsonify({"success": True}), 200
 

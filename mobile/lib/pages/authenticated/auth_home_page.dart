@@ -9,10 +9,10 @@ import 'package:mobile/pages/authenticated/plants_page.dart';
 import 'package:mobile/pages/authenticated/profile_page.dart';
 import 'package:mobile/pages/authenticated/settings_page.dart';
 import 'package:mobile/services/auth_service.dart';
+import 'package:mobile/pages/login_page.dart';
 import 'package:mobile/utils/api_config.dart';
 import 'package:mobile/utils/storage_util.dart';
 import 'package:mobile/models/plant_detail.dart';
-
 
 class AuthenticatedHome extends StatefulWidget{
   const AuthenticatedHome({Key? key}) : super(key: key);
@@ -26,19 +26,11 @@ class _AuthenticatedHome extends State<AuthenticatedHome>{
   final auth = AuthService();
 
   final List<Widget> _screens = [
-    LandingPage(),
+    const HomePage(),
     PlantsPage(),
     MapPage(),
     ProfilePage(),
     SettingsPage(),
-  ];
-
-  final List<String> _appBarTitles = [
-    'Home',
-    'Plants',
-    'Map',
-    'Profile',
-    'Settings',
   ];
 
   @override
@@ -128,27 +120,32 @@ class _AuthenticatedHome extends State<AuthenticatedHome>{
     });
   }
 
+  Widget _checkPage(){
+    if(_currentIndex == 3){
+      return IconButton(
+        icon: const Icon(Icons.logout),
+        onPressed: () {
+          auth.logout().then((_) {
+            Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => SignInPage()),
+        );
+          });
+        },
+      );
+    } else {
+      return Container();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_appBarTitles[_currentIndex]),
+        title: Text("Florever"),
         actions: [
-
-          // IconButton(
-          //   icon: const Icon(Icons.logout),
-          //   onPressed: () {
-          //     auth.logout().then((_) {
-          //       Navigator.pushReplacement(
-          //         context,
-          //         MaterialPageRoute(builder: (context) => MyApp()),
-          //       );
-          //     }).catchError((error) {
-          //       animatedSnackbar.show(message: "Error logging out", type: SnackbarType.error, context: context);
-          //     });
-          //   },
-          // ),
-        ],
+            _checkPage(),
+          ],
       ), 
       body: _screens[_currentIndex],
       bottomNavigationBar: ElevatedNavBar(

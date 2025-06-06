@@ -18,11 +18,11 @@ class ProfileService {
   }
 
   // Update user profile
-  Future<Map<String, dynamic>> updateProfile({
+  Future<Map<String, dynamic>?> updateProfile(
     String? fullName,
     String? phone,
     String? username,
-  }) async {
+  ) async {
     final token = await _storageUtil.getToken();
 
     if (token == null) {

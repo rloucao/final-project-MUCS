@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum SnackbarType { success, error, info }
+enum SnackbarType { success, error, info, warning }
 
 class animatedSnackbar extends StatefulWidget {
   final String message;
@@ -16,7 +16,7 @@ class animatedSnackbar extends StatefulWidget {
     this.onClose,
   }) : super(key: key);
 
-  // Static method to show the snackbar
+
   static void show({
     required BuildContext context,
     required String message,
@@ -112,6 +112,15 @@ class _AnimatedSnackbarState extends State<animatedSnackbar> with SingleTickerPr
           'color': Colors.red.shade500,
         };
       case SnackbarType.info:
+        return {
+          'icon': Icons.info,
+          'color': Colors.blue.shade500,
+        };
+      case SnackbarType.warning:
+        return {
+          'icon': Icons.warning,
+          'color': Colors.amber.shade500,
+        };
       default:
         return {
           'icon': Icons.info,

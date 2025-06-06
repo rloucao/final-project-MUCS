@@ -84,6 +84,7 @@ class AuthService extends ChangeNotifier{
         if (responseData['session'] != null) {
           await _storageUtil.saveToken(responseData['session']);
           await _storageUtil.saveUser(responseData['user']);
+
         }
 
         isAuthenticated = true;
@@ -110,6 +111,10 @@ class AuthService extends ChangeNotifier{
 
   // Logout user
   Future<void> logout() async {
+     final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/logout'),
+        headers: {"Content-Type": "application/json"},
+      );
     await _storageUtil.deleteToken();
     isAuthenticated = false;
   }

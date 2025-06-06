@@ -10,14 +10,14 @@ import 'package:provider/provider.dart';
 import '../../providers/hotel_plants_provider.dart';
 import '../../providers/selected_hotel_provider.dart';
 
-class LandingPage extends StatefulWidget {
-  const LandingPage({Key? key}) : super(key: key);
+class HomePage extends StatefulWidget {
+  const HomePage({Key? key}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _HomePageState createState() => _HomePageState(); 
 }
 
-class _HomePageState extends State<LandingPage> {
+class _HomePageState extends State<HomePage> {
   final HotelDataService _hotelService = HotelDataService();
   late List<Hotel> _hotels;
   late List<Hotel> _filteredHotels;

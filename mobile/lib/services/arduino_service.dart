@@ -25,23 +25,23 @@ class ArduinoService with ChangeNotifier {
 
       // Listen for messages from the Arduino
       _subscription = _channel!.stream.listen(
-              (message) {
-            _lastMessage = message.toString();
-            notifyListeners(); // Notify listeners about new data
-            print('Received from Arduino: $_lastMessage');
-          },
-          onDone: () {
-            _isConnected = false;
-            notifyListeners();
-            print('WebSocket connection closed');
-          },
-          onError: (error) {
-            _isConnected = false;
-            notifyListeners();
-            print('WebSocket error: $error');
-          }
+        (message) {
+          _lastMessage = message.toString();
+          notifyListeners(); // Notify listeners about new data
+          print('Received from Arduino: $_lastMessage');
+        },
+        onDone: () {
+          _isConnected = false;
+          notifyListeners();
+          print('WebSocket connection closed');
+        },
+        onError: (error) {
+          _isConnected = false;
+          notifyListeners();
+          print('WebSocket error: $error');
+        }
       );
-
+      
       notifyListeners();
     } catch (e) {
       _isConnected = false;
@@ -49,21 +49,22 @@ class ArduinoService with ChangeNotifier {
       notifyListeners();
     }
   }
-
+  
   // Send message to Arduino
   Future<void> sendMessage(String message) async {
-    final ip = "http://192.168.249.247";
-    final url = '$ip/led';
-    final response = await http.get(Uri.parse(url));
+      final ip = "http://192.168.1.166";
+      ///final url = message == "on" ? "$ip/led/on" : "$ip/led/off";
+      final url = "$ip/led";
+      final response = await http.get(Uri.parse(url));
 
-    if(response.statusCode == 200){
-      print("Message sent successfully: ${response.body}");
-    }else{
-      print('Failed to send message: ${response.statusCode}');
-    }
 
+      if(response.statusCode == 200){
+        print("Message sent successfully: ${response.body}");
+      }else{
+        print('Failed to send message: ${response.statusCode}');
+      }
   }
-
+  
   // Disconnect from WebSocket server
   void disconnect() {
     _subscription?.cancel();
@@ -78,4 +79,5 @@ class ArduinoService with ChangeNotifier {
     disconnect();
     super.dispose();
   }
-}
+} 
+

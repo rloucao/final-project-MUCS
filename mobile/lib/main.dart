@@ -5,6 +5,7 @@ import 'package:mobile/pages/signup_page.dart';
 import 'package:mobile/providers/hotel_plants_provider.dart';
 import 'package:mobile/providers/selected_hotel_provider.dart';
 import 'package:mobile/services/auth_service.dart';
+import 'package:mobile/services/arduino_service.dart';
 import 'package:provider/provider.dart';
 
 
@@ -18,6 +19,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => SelectedHotelProvider()),
         ChangeNotifierProvider(create: (_) => HotelPlantsProvider()),
         // Add more providers here as needed
+        //ChangeNotifierProvider(create: (_) =>  AuthService()),
+        ChangeNotifierProvider(create: (_) => ArduinoService()),
       ],
       child: const MyApp(),
     ),
@@ -37,10 +40,10 @@ class MyApp extends StatelessWidget {
       ),
       home: Consumer<AuthService>(
         builder: (context, authService, _) {
-          return const AuthenticatedHome();
-         // return authService.isAuthenticated
-         //  ? const AuthenticatedHome()
-         //      : const HomePage();
+         // return const AuthenticatedHome();
+         return authService.isAuthenticated
+          ? const AuthenticatedHome()
+              : const HomePage();
         },
       ),
     );

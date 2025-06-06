@@ -1,0 +1,24 @@
+\\documentclass[a4paper,12pt]{article}
+\\usepackage{graphicx}
+\\usepackage{hyperref}
+\\usepackage{geometry}
+\\usepackage{eso-pic} % Added for logo placement
+\\geometry{left=3cm,right=3cm,top=3cm,bottom=3cm}
+
+\\title{\\textbf{Florever}\\\large Project Checkpoint}
+\\date{\\today}
+
+\\begin{document}
+
+\\AddToShipoutPictureBG*{% Add logo to background
+  \\AtPageUpperLeft{% Position at top-left
+    \\hspace*{1cm}% Horizontal offset from left edge
+    \\raisebox{-\\height-1cm}{% Vertical offset from top edge
+      \\includegraphics[width=2.5cm]{uni_logo.png}% Include the logo - REPLACE uni_logo.png and adjust width
+    }%
+  }%
+}
+
+\\maketitle
+
+\\end{document}

@@ -47,6 +47,8 @@ WebServer server(80);
 #define DHT_TYPE DHT11
 DHT dht(DHT_PIN, DHT_TYPE);
 
+uint64_t MAC_ID;
+
 
 SSD1306Wire factory_display(0x3c, 500000, SDA_OLED, SCL_OLED, GEOMETRY_128_64, RST_OLED);
 
@@ -111,6 +113,7 @@ void OnTxDone(void) {
   txDoneFlag = true;
 }
 
+
 void OnTxTimeout(void) {
   Serial.println("TX Timeout Callback Fired!");
   factory_display.clear();
@@ -121,8 +124,11 @@ void OnTxTimeout(void) {
   txDoneFlag = false; // Indicate failure
 }
 
+
 void init_LoRa_slave(){
-   Mcu.begin(HELTEC_BOARD, SLOW_CLK_TPYE);  
+  Mcu.begin(HELTEC_BOARD, SLOW_CLK_TPYE);  
+
+  MAC_ID = ESP.getEfuseMac();
 
   factory_display.init();
   factory_display.clear();
@@ -159,7 +165,6 @@ void init_LoRa_slave(){
   Serial.println("LORA_CODINGRATE: " + String(LORA_CODINGRATE));
   Serial.println("LORA_PREAMBLE_LENGTH: " + String(LORA_PREAMBLE_LENGTH));
 }
-
 
 
 void setup() {
@@ -227,11 +232,18 @@ void setup() {
 }
 
 
-void handle_ms_communication(){
-   Radio.IrqProcess();
 
-  char buffer[30];
-  sprintf(buffer, "hello %d", counter);
+
+/**
+ @def Handle Master - Slave Communication, via LoRaWAN
+
+*/
+void handle_ms_communication(){
+  Radio.IrqProcess();
+
+  char buffer[40];
+  //sprintf(buffer, "%.2f-%.2f-%d-%d", temperature, humidity, lightLevel, MAC_ID);
+  sprintf(buffer, "%.2f-%.2f-%d-%d", 20.01, 20.232, 200, MAC_ID);
 
   Serial.print("Attempting to send: ");
   Serial.println(buffer);
@@ -268,7 +280,6 @@ void handle_ms_communication(){
 
   // Display result
   factory_display.clear();
-  factory_display.drawString(10, 10, "LoRa Sender");
   factory_display.drawString(10, 25, "Packet #: " + String(counter));
   factory_display.drawString(10, 40, "Msg: " + String(buffer));
   

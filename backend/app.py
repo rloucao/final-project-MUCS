@@ -4,6 +4,8 @@ from config import Config
 from flask_cors import CORS
 import os
 import logging
+from datetime import datetime
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,9 +123,6 @@ def get_plants():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}, 500)
 
-
-from datetime import datetime
-
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
@@ -167,7 +166,7 @@ def receive_data():
             logger.info("Plant not found. Inserting new entry...")
             supabase.table("plant").insert({
                 "mac_id": mac_id,
-                "name": "Abutilon hybridum",
+                "name": ["Abutilon hybridum"],
                 "location": "lobby"
             }).execute()
             #print(f"Created new plant entry for MAC: {mac_id}")

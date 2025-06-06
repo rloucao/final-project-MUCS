@@ -148,8 +148,11 @@ def receive_data():
     # Save to supabase
     try:
         # Check if plant exists
+        print("checking if plant exists in database...")
         res = supabase.table("plants").select("*").eq("id", mac_id).execute()
         
+        print(res)
+
         if not res.data:
             # Create new plant entry
             supabase.table("plants").insert({

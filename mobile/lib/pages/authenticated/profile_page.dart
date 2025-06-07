@@ -269,47 +269,48 @@ class _ProfilePageState extends State<ProfilePage> {
           SizedBox(height: 24),
           
           // User Statistics Card
-          Card(
-            elevation: 4,
-            color: Colors.white.withOpacity(0.9),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Your Plant Statistics',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
+          if (_role == "client")
+            Card(
+              elevation: 4,
+              color: Colors.white.withOpacity(0.9),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your Plant Statistics',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade800,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatItem(
-                        icon: Icons.eco,
-                        value: _profileData?['plant_count']?.toString() ?? '4',
-                        label: 'Total Plants Visited',
-                      ),
-                      _buildStatItem(
-                        icon: Icons.water_drop,
-                        value: _profileData?['watered_count']?.toString() ?? '1',
-                        label: 'Watered',
-                      ),
-                      _buildStatItem(
-                        icon: Icons.calendar_today,
-                        value: _profileData?['days_active']?.toString() ?? '32',
-                        label: 'Days Active',
-                      ),
-                    ],
-                  ),
-                ],
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatItem(
+                          icon: Icons.eco,
+                          value: _profileData?['plant_count']?.toString() ?? '4',
+                          label: 'Total Plants Visited',
+                        ),
+                        _buildStatItem(
+                          icon: Icons.water_drop,
+                          value: _profileData?['watered_count']?.toString() ?? '1',
+                          label: 'Watered',
+                        ),
+                        _buildStatItem(
+                          icon: Icons.calendar_today,
+                          value: _profileData?['days_active']?.toString() ?? '32',
+                          label: 'Days Active',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
           ),
           
           SizedBox(height: 30),
@@ -343,7 +344,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Text('Cancel'),
             ),
 
-          SizedBox(height: 10),
+          /*SizedBox(height: 10),
 
           ElevatedButton.icon(
               onPressed:
@@ -372,7 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-          )
+          )*/
         ],
       ),
     );
@@ -443,39 +444,40 @@ class _ProfilePageState extends State<ProfilePage> {
       elevation: 4,
       child: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Your Plant Statistics',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade800,
+        child:
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your Plant Statistics',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
               ),
-            ),
-            SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(
-                  icon: Icons.eco,
-                  value: _profileData?['plant_count']?.toString() ?? '4',
-                  label: 'Total Plants Visited',
-                ),
-                _buildStatItem(
-                  icon: Icons.water_drop,
-                  value: _profileData?['watered_count']?.toString() ?? '1',
-                  label: 'Watered',
-                ),
-                _buildStatItem(
-                  icon: Icons.calendar_today,
-                  value: _profileData?['days_active']?.toString() ?? '32',
-                  label: 'Days Active',
-                ),
-              ],
-            ),
-          ],
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(
+                    icon: Icons.eco,
+                    value: _profileData?['plant_count']?.toString() ?? '4',
+                    label: 'Total Plants Visited',
+                  ),
+                  _buildStatItem(
+                    icon: Icons.water_drop,
+                    value: _profileData?['watered_count']?.toString() ?? '1',
+                    label: 'Watered',
+                  ),
+                  _buildStatItem(
+                    icon: Icons.calendar_today,
+                    value: _profileData?['days_active']?.toString() ?? '32',
+                    label: 'Days Active',
+                  ),
+                ],
+              ),
+            ],
         ),
       ),
     );

@@ -123,7 +123,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
   String _formatTimestamp(String? timestamp) {
     if (timestamp == null || timestamp.isEmpty) return "Unknown";
     try {
-      final dt = DateTime.parse(timestamp);
+      final dt = DateTime.parse(timestamp).toUtc();
       return DateFormat('yyyy-MM-dd HH:mm').format(dt);
     } catch (e) {
       return "Invalid date";
@@ -161,12 +161,9 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
         Uri.parse('${ApiConfig.baseUrl}/sensor_data/$macId'),
         headers: {'Content-Type': 'application/json'},
       );
-      /*print(response.statusCode);
-      print(response.body);*/
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['sensor_data'];
-        print("Sensor data response: $data");
 
         if (data == null || data.isEmpty) {
           animatedSnackbar.show(
@@ -183,12 +180,8 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
             DateTime.parse(a['created_at']).compareTo(DateTime.parse(b['created_at'])));
         final latest = sensorList.last;
 
-        print("Latest sensor data: $latest");
         // if marker sensor status differs from plant status, update marker
-        // TODO check if this works correctly
         if (plantData!["status"] != latest["Status"]) {
-          print("HALLLOOO VERDAMMMTE SCHEISSE");
-          print("Type of latest status: ${latest["Status"].runtimeType}");
           MapMarker marker = MapMarker(
             id: plantData!["id"],
             hotelId: plantData!["hotelId"],
@@ -205,7 +198,6 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
           print("Update Time: ${marker.lastUpdated}");
           MarkerSyncService.syncSingleMarker(marker);
         }
-
 
         // Show sensor data dialog
         showDialog(
@@ -373,7 +365,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             TextButton(
-                              onPressed: plantData!["status"] > 0
+                              onPressed: (plantData!["status"] > 0 && plantData!["mac_id"] != null)
                                   ? () => _showPlantStatusOverlay(context)
                                   : null,
                               child: Text(
@@ -385,15 +377,16 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                TextButton.icon(
-                                  onPressed: () {
-                                    _sendMessageToArduinoOn();
-                                    print("Water Plant ${widget.plantId}");
-                                  },
-                                  icon: const Icon(Icons.water_drop, color: Colors.white),
-                                  label: const Text("Water Plant", style: TextStyle(color: Colors.white)),
-                                ),
-                                const SizedBox(width: 8),
+                                if (plantData?["mac_id"] != null && plantData?["status"] > 0)
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      _sendMessageToArduinoOn();
+                                      print("Water Plant ${widget.plantId}");
+                                    },
+                                    icon: const Icon(Icons.water_drop, color: Colors.white),
+                                    label: const Text("Water Plant", style: TextStyle(color: Colors.white)),
+                                  ),
+                                  const SizedBox(width: 8),
                                 TextButton.icon(
                                   onPressed: () {
                                     _confirmDelete(context);

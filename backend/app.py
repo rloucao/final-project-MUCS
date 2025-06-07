@@ -116,7 +116,6 @@ def sync_data():
 
 @app.route('/get_plants', methods=['GET'])
 def get_plants():
-    #TODO check if this one is still used and if there is an impact
     try:
         response = supabase.table("plant_list").select("*").execute()
         return jsonify({"success": True, "plants": response.data})

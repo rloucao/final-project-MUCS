@@ -14,6 +14,8 @@ class StorageUtil {
 
   // Save markers with specific fields
   static Future<void> saveMarkers(List<MapMarker> markers) async {
+    // Remove duplicates before saving
+    markers = removeMarkerDuplicates(markers);
 
     final prefs = await SharedPreferences.getInstance();
     final markerData = markers.map((m) => {
@@ -30,6 +32,23 @@ class StorageUtil {
       'mac_id': m.mac_id,
     }).toList();
     await prefs.setString(_markerKey, jsonEncode(markerData));
+  }
+
+  static List<MapMarker> removeMarkerDuplicates(List<dynamic> markers) {
+    // collect unique markers based on their IDs
+    final uniqueMarkers = <int, MapMarker>{};
+
+    for (var marker in markers) {
+      if (!uniqueMarkers.containsKey(marker.id)) {
+        uniqueMarkers[marker.id] = marker; // Add only unique markers
+      } else {
+        // If a marker with the same ID already exists, compare lastUpdated
+        if (uniqueMarkers[marker.id]!.lastUpdated.isBefore(marker.lastUpdated)) {
+          uniqueMarkers[marker.id] = marker; // Update with the newer marker
+        }
+      }
+    }
+    return uniqueMarkers.values.toList(); // Return the list of unique markers
   }
 
   // Save PlantDetails with specific fields
@@ -155,9 +174,6 @@ class StorageUtil {
       return [];
     }
   }
-
-
-
 
   // Save authentication token
   Future<void> saveToken(String token) async {

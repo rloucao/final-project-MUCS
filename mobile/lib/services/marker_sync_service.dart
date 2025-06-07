@@ -25,8 +25,6 @@ class MarkerSyncService {
   }
 
   static Future<List<MapMarker>> syncMarkers(List<MapMarker>? markersFromDisk) async {
-
-    print("parameter markersFromDisk: $markersFromDisk");
     List<MapMarker> mergedMarkers = [];
 
     try {
@@ -48,12 +46,6 @@ class MarkerSyncService {
 
         // check if both markers exist
         if (serverMarker != null && diskMarker != null) {
-
-          // print both timestamps for debugging
-          print("Comparing timestamps for marker ID: $id");
-          print("Server Marker Last Updated: ${serverMarker.lastUpdated}");
-          print("Disk Marker Last Updated: ${diskMarker.lastUpdated}");
-
           // both exist, compare timestamps
           if ((serverMarker.lastUpdated.toLocal()).isAfter(diskMarker.lastUpdated)) {
             // remote marker is newer, update local marker

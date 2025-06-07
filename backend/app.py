@@ -1,5 +1,4 @@
 from http.client import responses
-
 from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from config import Config
@@ -60,7 +59,6 @@ def login():
     except Exception as e:
         return jsonify({"error": str(e)}, 500)
         
-
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.json
@@ -131,7 +129,9 @@ def receive_data():
     # data = 25.60-60.30-450-1234567890
 
     # Data is encrypted using AES-128: temperature-humidity-light-MAC_ID
-    
+    logger.info(f"Encrypted data: {data}") 
+
+
     if not data:
         return jsonify({"error": "No data provided"}), 400
 

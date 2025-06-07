@@ -141,6 +141,7 @@ def receive_data():
     logger.info(f"Decrypted data: {data}") 
     
     parts = data.split('-')
+    logger.info(f"Split data parts: {parts}")
     
     try:
         temp = float(parts[0]) if len(parts) > 0 else None

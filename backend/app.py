@@ -135,20 +135,14 @@ def update_plant_status(mac_id, status):
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
-    # data = 25.60-60.30-450-1234567890
-    # data = -1-1-1-1234567890
 
-    # ['' , '1' ,'', '1' ,'' , '1', '1234567890']
-
-    # Data is encrypted using AES-128: temperature-humidity-light-MAC_ID
     logger.info(f"Encrypted data: {data}") 
 
 
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    # Decrypt data
-    # res = decrypt_aes128_ecb(data)   
+    
 
     logger.info(f"Decrypted data: {data}") 
     

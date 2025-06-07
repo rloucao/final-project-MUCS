@@ -17,6 +17,7 @@
 #include "HT_SSD1306Wire.h"
 #include "AES.h"
 #include "Crypto.h"
+#include <HTTPClient.h>
 
 const char* ssid = "Vodafone-18E4A0";
 const char* pwd = "hZ7qDeqy9Y";
@@ -25,7 +26,6 @@ const char* pwd = "hZ7qDeqy9Y";
 
 WebServer server(80);
 
-// Pin Definitions (Your specific connections)
 #define DHT_PIN         3     // DHT11 sensor
 #define LIGHT_SENSOR_PIN 7    // LDR sensor
 #define RELAY_PIN       2     // Water pump relay
@@ -52,6 +52,8 @@ DHT dht(DHT_PIN, DHT_TYPE);
 uint64_t MAC_ID;
 
 SSD1306Wire factory_display(0x3c, 500000, SDA_OLED, SCL_OLED, GEOMETRY_128_64, RST_OLED);
+const char *host = "https://final-project-mucs.onrender.com";  
+WiFiClientSecure client;
 
 static RadioEvents_t RadioEvents;
 
@@ -92,48 +94,117 @@ const unsigned long PUMP_INTERVAL = 15000;    // 15 seconds between cycles for t
 const unsigned long SENSOR_INTERVAL = 2000;   // 2 seconds between readings
 const unsigned long LED_CYCLE_TIME = 1500;    // 1.5 seconds per color
 
-//Function to encrypt the data to then be sent
+unsigned long lastHeartbeatReceived = 0;
+bool master_alive = true;
+unsigned long lastMasterStatusCheck = 0;
+
+const unsigned long HEARTBEAT_TIMEOUT = 7200000UL;
+const unsigned long TRANSMISSION_INTERVAL = 7200000UL; 
+
+
+void check_master_status() {
+  unsigned long currentTime = millis();
+  bool previousStatus = master_alive;
+  
+  // Check if we've received a heartbeat recently
+  if (currentTime - lastHeartbeatReceived > HEARTBEAT_TIMEOUT) {
+    master_alive = false;
+  } else {
+    master_alive = true;
+  }
+  
+  // Log status changes
+  if (previousStatus != master_alive) {
+    if (master_alive) {
+      Serial.println("✅ MASTER RECONNECTED - Switching back to LoRa communication");
+      factory_display.clear();
+      factory_display.drawString(10, 10, "Master Online");
+      factory_display.drawString(10, 30, "LoRaWAN Mode");
+      factory_display.display();
+      delay(2000);
+    } else {
+      Serial.println("❌ MASTER DISCONNECTED - Switching to WiFi communication");
+      factory_display.clear();
+      factory_display.drawString(10, 10, "Master Offline");
+      factory_display.drawString(10, 30, "WiFi Mode");
+      factory_display.display();
+      delay(2000);
+    }
+  }
+}
+
 void encryptData(const char *data, byte *encryptedData, int dataLength) {
+  memset(plaintext, 0, sizeof(plaintext));
+  memset(cipherText, 0, sizeof(cipherText));
+  
   aes.setKey(key, sizeof(key));
   
-  // Process data in 16-byte blocks
-  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; // Ceiling division
+  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE;
+  
+  Serial.print("Encrypting ");
+  Serial.print(dataLength);
+  Serial.print(" bytes in ");
+  Serial.print(blocks);
+  Serial.println(" blocks");
   
   for(int i = 0; i < blocks; i++) {
     memset(plaintext, 0, BUFFER_SIZE);
+    
     int copyLength = min(BUFFER_SIZE, dataLength - (i * BUFFER_SIZE));
+    
     memcpy(plaintext, data + (i * BUFFER_SIZE), copyLength);
+    
+    Serial.print("Block ");
+    Serial.print(i);
+    Serial.print(" (");
+    Serial.print(copyLength);
+    Serial.print(" bytes): ");
+    for(int j = 0; j < copyLength; j++) {
+      Serial.print((char)plaintext[j]);
+    }
+    Serial.println();
     
     aes.encryptBlock(encryptedData + (i * BUFFER_SIZE), plaintext);
   }
 }
 
-//Function to decrypt the received (encrypted) data
 void decryptData(const byte *encryptedData, char *decryptedOutput, int dataLength) {
+  memset(decryptText, 0, sizeof(decryptText));
+  memset(decryptedOutput, 0, dataLength + 1); 
+  
   aes.setKey(key, sizeof(key));
   
-  // Process data in 16-byte blocks
-  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; // Ceiling division
+  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; 
+  
+  Serial.print("Decrypting ");
+  Serial.print(dataLength);
+  Serial.print(" bytes in ");
+  Serial.print(blocks);
+  Serial.println(" blocks");
   
   for(int i = 0; i < blocks; i++) {
+    memset(decryptText, 0, BUFFER_SIZE);
+    
     aes.decryptBlock(decryptText, encryptedData + (i * BUFFER_SIZE));
     
     int copyLength = min(BUFFER_SIZE, dataLength - (i * BUFFER_SIZE));
+    
     memcpy(decryptedOutput + (i * BUFFER_SIZE), decryptText, copyLength);
   }
   
-  // Null terminate the string
   decryptedOutput[dataLength] = '\0';
   
-  // Remove padding characters (null bytes at the end)
   for(int i = dataLength - 1; i >= 0; i--) {
-    if(decryptedOutput[i] == '\0') {
+    if(decryptedOutput[i] == '\0' || decryptedOutput[i] == '\x00') {
       continue;
     } else {
       decryptedOutput[i + 1] = '\0';
       break;
     }
   }
+  
+  Serial.print("Decrypted result: ");
+  Serial.println(decryptedOutput);
 }
 
 void handleCORS() {
@@ -164,17 +235,20 @@ void handleLEDOff() {
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   receivedFlag = true;
   
-  // Ensure we don't overflow the buffer
   size = min(size, (uint16_t)(receivedPayloadSize - 1));
   memcpy(receivedPayload, payload, size);
   
-  // Decrypt the received data
   memset(decryptedPayload, 0, sizeof(decryptedPayload));
   decryptData((byte*)receivedPayload, decryptedPayload, size);
 
   Serial.printf("Received encrypted data from master, decrypted: %s | RSSI: %d | SNR: %d\n", decryptedPayload, rssi, snr);
+
+  if(strcmp(decryptedPayload, "HEARTBEAT") == 0){
+    lastHeartbeatReceived = millis();
+    Serial.print("ITS ALIVEEEEEEEEEEE");
+    return;
+  }
   
-  // Process the decrypted command
   processCommand(String(decryptedPayload));
 }
 
@@ -376,59 +450,113 @@ void handle_ms_communication(){
 
   // Send sensor data periodically (every 10 seconds)
   static unsigned long lastSensorSend = 0;
-  if(millis() - lastSensorSend >= 10000) {
+  if(millis() - lastSensorSend >= TRANSMISSION_INTERVAL) {
+    Serial.println("📡 2-hour transmission interval reached - sending sensor data");
     sendSensorData();
     lastSensorSend = millis();
+    
+    // Show next transmission time
+    unsigned long nextTransmissionTime = (TRANSMISSION_INTERVAL / 1000 / 60); // Convert to minutes
+    Serial.print("⏰ Next transmission in ");
+    Serial.print(nextTransmissionTime);
+    Serial.println(" minutes");
   }
 }
 
-void sendSensorData() {
-  char buffer[50];
-  sprintf(buffer, "%.2f-%.2f-%d-%d", temperature, humidity, lightLevel, (int)MAC_ID);
+void send_data_to_server_directly(){
+  HTTPClient http;
+  // Use decrypted payload for server communication
+  String data = String(decryptedPayload);
 
-  Serial.print("Sending encrypted sensor data: ");
-  Serial.println(buffer);
-
-  // Calculate encrypted data size (must be multiple of 16)
-  int messageLength = strlen(buffer);
-  int encryptedSize = ((messageLength + BUFFER_SIZE - 1) / BUFFER_SIZE) * BUFFER_SIZE;
+  memset(cipherText, 0, sizeof(cipherText));
+  memset(plaintext, 0, sizeof(plaintext));
   
+  char buffer[64]; 
+  memset(buffer, 0, sizeof(buffer)); 
+  
+  sprintf(buffer, "%.2f/%.2f/%d/%d", temperature, humidity, lightLevel, (int)MAC_ID);
   byte encryptedData[encryptedSize];
   memset(encryptedData, 0, encryptedSize);
   
   // Encrypt the message
   encryptData(buffer, encryptedData, messageLength);
 
-  // Show sending status
+  client.setInsecure(); 
+  String path = String(host) + "/send_sensor_data?data=" + String(buffer);
+  
+  Serial.println("Sending to server: " + data);
+
+  http.begin(client, path);
+  http.addHeader("Content-Type", "application/json");
+
+  int res_code = http.POST("");
+  if(res_code > 0){
+    String res = http.getString();
+    Serial.println("Server response: " + res);
+  }else{
+    Serial.println("Error sending to server: " + String(res_code));
+  }
+  http.end();
+}
+
+void send_to_master(){
+  memset(cipherText, 0, sizeof(cipherText));
+  memset(plaintext, 0, sizeof(plaintext));
+  
+  char buffer[64]; 
+  memset(buffer, 0, sizeof(buffer)); 
+  
+  sprintf(buffer, "%.2f/%.2f/%d/%d", temperature, humidity, lightLevel, (int)MAC_ID);
+  //sprintf(buffer, "%.2f/%.2f/%d/%d", 1.23, 1.23, 123, (int)MAC_ID);
+  
+  Serial.print("Original data to send: ");
+  Serial.println(buffer);
+  Serial.print("Data length: ");
+  Serial.println(strlen(buffer));
+
   factory_display.clear();
   factory_display.drawString(10, 10, "LoRa Slave");
   factory_display.drawString(10, 25, "Packet #: " + String(counter));
   factory_display.drawString(10, 40, "Sending data...");
   factory_display.display();
 
-  // Ensure radio is in standby before sending
-  Radio.Standby();
-  delay(10);
+  delay(1000); 
+
+  int messageLength = strlen(buffer);
+  int encryptedSize = ((messageLength + BUFFER_SIZE - 1) / BUFFER_SIZE) * BUFFER_SIZE;
   
-  // Send the encrypted message
+  byte encryptedData[encryptedSize];
+  memset(encryptedData, 0, encryptedSize); 
+  
+  encryptData(buffer, encryptedData, messageLength);
+
+  Serial.print("Encrypted data (hex): ");
+  for(int i = 0; i < min(32, encryptedSize); i++) {
+    if(encryptedData[i] < 16) Serial.print("0");
+    Serial.print(encryptedData[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+
+  Radio.Standby();
+  delay(50); 
+  
   Radio.Send(encryptedData, encryptedSize);
 
   unsigned long startTime = millis();
   bool softwareTimeoutOccurred = false;
 
-  // Wait for transmission to complete
   while (!txDoneFlag) {
     Radio.IrqProcess();
     delay(1);
     
-    if (millis() - startTime > 4000) { // 4 second timeout
+    if (millis() - startTime > 5000) { 
       Serial.println("Software TX timeout!");
       softwareTimeoutOccurred = true;
       break;
     }
   }
 
-  // Display result
   factory_display.clear();
   factory_display.drawString(10, 10, "LoRa Slave");
   factory_display.drawString(10, 25, "Packet #: " + String(counter));
@@ -446,13 +574,21 @@ void sendSensorData() {
   }
   factory_display.display();
 
-  // Reset flag for next transmission
   txDoneFlag = false;
   counter++;
 
-  // Return to RX mode to listen for commands
-  delay(100);
+  delay(200); 
   Radio.Rx(0);
+}
+
+void sendSensorData() {
+ check_master_status();
+ if(master_alive){
+  send_to_master();
+ } 
+ else{
+  send_data_to_server_directly();
+ }
 }
 
 void loop() {

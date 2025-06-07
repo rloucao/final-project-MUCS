@@ -123,10 +123,22 @@ def get_plants():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}, 500)
 
+def update_plant_status(mac_id, status):
+    try:
+        # Update the plant's status
+        supabase.table("hotel_plansts").update({"Status": status}).eq("mac_id", mac_id).execute()
+        logger.info(f"Updated plant {mac_id} status to {status}")
+    except Exception as e:
+        logger.error(f"Error updating plant status: {str(e)}")
+
+
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
     # data = 25.60-60.30-450-1234567890
+    # data = -1-1-1-1234567890
+
+    # ['' , '1' ,'', '1' ,'' , '1', '1234567890']
 
     # Data is encrypted using AES-128: temperature-humidity-light-MAC_ID
     logger.info(f"Encrypted data: {data}") 
@@ -140,7 +152,7 @@ def receive_data():
 
     logger.info(f"Decrypted data: {data}") 
     
-    parts = data.split('-')
+    parts = data.split('/')
     logger.info(f"Split data parts: {parts}")
     
     try:
@@ -194,9 +206,11 @@ def receive_data():
             "Temp": temp,
             "Moisture": humidity,
             "Light": light,
-            "Status": "healthy"
+            "Status": "1"
         }).execute()
         
+        update_plant_status(mac_id, "1")  # Update status to '1' (active)
+
         # Update the plant's last_intervened time with proper timestamp
         current_time = datetime.utcnow().isoformat()
         supabase.table("hotel_plants").update({

@@ -8,7 +8,7 @@ import ast
 import os
 import logging
 from datetime import datetime
-from Crypto import decrypt_aes128_ecb 
+from aes_crypting import decrypt_aes128_ecb 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

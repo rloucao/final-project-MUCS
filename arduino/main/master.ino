@@ -13,6 +13,8 @@
 #include "LoRaWan_APP.h"
 #include "HT_SSD1306Wire.h"
 #include <WebServer.h>
+#include "AES.h"
+#include "Crypto.h"
 
 const char* ssid = "Vodafone-18E4A0";
 const char* pwd = "hZ7qDeqy9Y";
@@ -26,6 +28,8 @@ const char* pwd = "hZ7qDeqy9Y";
 #define LORA_FIX_LENGTH_PAYLOAD_ON false
 #define LORA_IQ_INVERSION_ON false
 
+#define BUFFER_SIZE 16  // AES block size
+
 IPAddress serverIP;
 const char *host = "https://final-project-mucs.onrender.com";  
 WiFiClientSecure client;
@@ -37,6 +41,7 @@ static RadioEvents_t RadioEvents;
 bool receivedFlag = false;
 const unsigned int receivedPayloadSize = 128;  
 char receivedPayload[receivedPayloadSize]; 
+char decryptedPayload[receivedPayloadSize]; // Buffer for decrypted data
 unsigned long lastStatusUpdate = 0;
 unsigned long packetCount = 0;
 int counter = 0;
@@ -44,6 +49,58 @@ bool txDoneFlag = false;
 bool LED_ON = false;
 
 WebServer server(80);
+
+byte key[16] = { 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
+                 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81 };
+
+AES128 aes;
+byte cipherText[BUFFER_SIZE];
+byte decryptText[BUFFER_SIZE];
+byte plaintext[BUFFER_SIZE];
+
+//Function to encrypt the data to then be sent
+void encryptData(const char *data, byte *encryptedData, int dataLength) {
+  aes.setKey(key, sizeof(key));
+  
+  // Process data in 16-byte blocks
+  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; // Ceiling division
+  
+  for(int i = 0; i < blocks; i++) {
+    memset(plaintext, 0, BUFFER_SIZE);
+    int copyLength = min(BUFFER_SIZE, dataLength - (i * BUFFER_SIZE));
+    memcpy(plaintext, data + (i * BUFFER_SIZE), copyLength);
+    
+    aes.encryptBlock(encryptedData + (i * BUFFER_SIZE), plaintext);
+  }
+}
+
+//Function to decrypt the received (encrypted) data
+void decryptData(const byte *encryptedData, char *decryptedOutput, int dataLength) {
+  aes.setKey(key, sizeof(key));
+  
+  // Process data in 16-byte blocks
+  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; // Ceiling division
+  
+  for(int i = 0; i < blocks; i++) {
+    aes.decryptBlock(decryptText, encryptedData + (i * BUFFER_SIZE));
+    
+    int copyLength = min(BUFFER_SIZE, dataLength - (i * BUFFER_SIZE));
+    memcpy(decryptedOutput + (i * BUFFER_SIZE), decryptText, copyLength);
+  }
+  
+  // Null terminate the string
+  decryptedOutput[dataLength] = '\0';
+  
+  // Remove padding characters (null bytes at the end)
+  for(int i = dataLength - 1; i >= 0; i--) {
+    if(decryptedOutput[i] == '\0') {
+      continue;
+    } else {
+      decryptedOutput[i + 1] = '\0';
+      break;
+    }
+  }
+}
 
 void display_message(int posX, int posY, String message, int t = 1000){
   factory_display.clear();
@@ -59,20 +116,27 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   // Ensure we don't overflow the buffer
   size = min(size, (uint16_t)(receivedPayloadSize - 1));
   memcpy(receivedPayload, payload, size);
-  receivedPayload[size] = '\0'; 
+  
+  // Decrypt the received data
+  memset(decryptedPayload, 0, sizeof(decryptedPayload));
+  decryptData((byte*)receivedPayload, decryptedPayload, size);
 
   LED_ON = !LED_ON;
   digitalWrite(LED_BUILTIN, LED_ON ? HIGH : LOW);
 
-  Serial.printf("Received: %s | RSSI: %d | SNR: %d\n", receivedPayload, rssi, snr);
+  Serial.printf("Received encrypted data, decrypted: %s | RSSI: %d | SNR: %d\n", decryptedPayload, rssi, snr);
   
-  // Update display immediately
+  // Update display with decrypted message
   factory_display.clear();
   factory_display.drawString(0, 0, "LoRa Master");
   factory_display.drawString(0, 20, "Received:");
-  factory_display.drawString(0, 40, String(receivedPayload));
+  factory_display.drawString(0, 40, String(decryptedPayload));
   factory_display.drawString(0, 55, "RSSI:" + String(rssi));
   factory_display.display();
+
+
+  Serial.println("Data received through LoRaWAN");
+  Serial.println(String(decryptedPayload));
 }
 
 void OnRxTimeout(void){
@@ -108,10 +172,19 @@ void send_message_to_slave(){
   // Switch to TX mode
   Radio.Standby();
   
-  char converted_message[receivedPayloadSize];
-  message.toCharArray(converted_message, receivedPayloadSize);
+  // Calculate encrypted data size (must be multiple of 16)
+  int messageLength = message.length();
+  int encryptedSize = ((messageLength + BUFFER_SIZE - 1) / BUFFER_SIZE) * BUFFER_SIZE;
+  
+  byte encryptedData[encryptedSize];
+  memset(encryptedData, 0, encryptedSize);
+  
+  // Encrypt the message
+  encryptData(message.c_str(), encryptedData, messageLength);
+  
+  Serial.println("Sending encrypted message, original: " + message);
 
-  Radio.Send((uint8_t *)converted_message, message.length());
+  Radio.Send(encryptedData, encryptedSize);
   unsigned long startTime = millis();
   bool softwareTimeoutOccurred = false;
 
@@ -143,7 +216,8 @@ void send_message_to_slave(){
 
 void send_sensor_data_to_server(){
   HTTPClient http;
-  String data = String(receivedPayload);
+  // Use decrypted payload for server communication
+  String data = String(decryptedPayload);
 
   client.setInsecure(); 
   String path = String(host) + "/send_sensor_data?data=" + data;
@@ -204,7 +278,7 @@ void set_up_server(){
 }
 
 void init_lora(){
-  Serial.begin(115200);
+  Serial.begin(74880);
     
   factory_display.init();
   factory_display.clear();
@@ -271,9 +345,10 @@ void loop() {
   if(receivedFlag){
     receivedFlag = false;
     
-    Serial.println("Processing received message: " + String(receivedPayload));
+    Serial.println("Processing received message: " + String(decryptedPayload));
     
-    // Send to server
+    // Send to server (using decrypted data)
+    delay(10000);
     send_sensor_data_to_server();
     
     // Small delay before returning to RX mode

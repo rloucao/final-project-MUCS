@@ -15,7 +15,8 @@
 #include "Arduino.h"
 #include "LoRaWan_APP.h"
 #include "HT_SSD1306Wire.h"
-
+#include "AES.h"
+#include "Crypto.h"
 
 const char* ssid = "Vodafone-18E4A0";
 const char* pwd = "hZ7qDeqy9Y";
@@ -42,6 +43,7 @@ WebServer server(80);
 #define LORA_FIX_LENGTH_PAYLOAD_ON false
 #define LORA_IQ_INVERSION_ON false
 
+#define BUFFER_SIZE 16  // AES block size
 
 // DHT11 Configuration
 #define DHT_TYPE DHT11
@@ -49,14 +51,25 @@ DHT dht(DHT_PIN, DHT_TYPE);
 
 uint64_t MAC_ID;
 
-
 SSD1306Wire factory_display(0x3c, 500000, SDA_OLED, SCL_OLED, GEOMETRY_128_64, RST_OLED);
 
 static RadioEvents_t RadioEvents;
 
 int counter = 0;
 bool txDoneFlag = false;
+bool receivedFlag = false;
+const unsigned int receivedPayloadSize = 128;  
+char receivedPayload[receivedPayloadSize]; 
+char decryptedPayload[receivedPayloadSize]; // Buffer for decrypted data
 
+// AES Encryption
+byte key[16] = { 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
+                 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81 };
+
+AES128 aes;
+byte cipherText[BUFFER_SIZE];
+byte decryptText[BUFFER_SIZE];
+byte plaintext[BUFFER_SIZE];
 
 // System Variables
 float temperature = 0;
@@ -79,6 +92,50 @@ const unsigned long PUMP_INTERVAL = 15000;    // 15 seconds between cycles for t
 const unsigned long SENSOR_INTERVAL = 2000;   // 2 seconds between readings
 const unsigned long LED_CYCLE_TIME = 1500;    // 1.5 seconds per color
 
+//Function to encrypt the data to then be sent
+void encryptData(const char *data, byte *encryptedData, int dataLength) {
+  aes.setKey(key, sizeof(key));
+  
+  // Process data in 16-byte blocks
+  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; // Ceiling division
+  
+  for(int i = 0; i < blocks; i++) {
+    memset(plaintext, 0, BUFFER_SIZE);
+    int copyLength = min(BUFFER_SIZE, dataLength - (i * BUFFER_SIZE));
+    memcpy(plaintext, data + (i * BUFFER_SIZE), copyLength);
+    
+    aes.encryptBlock(encryptedData + (i * BUFFER_SIZE), plaintext);
+  }
+}
+
+//Function to decrypt the received (encrypted) data
+void decryptData(const byte *encryptedData, char *decryptedOutput, int dataLength) {
+  aes.setKey(key, sizeof(key));
+  
+  // Process data in 16-byte blocks
+  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; // Ceiling division
+  
+  for(int i = 0; i < blocks; i++) {
+    aes.decryptBlock(decryptText, encryptedData + (i * BUFFER_SIZE));
+    
+    int copyLength = min(BUFFER_SIZE, dataLength - (i * BUFFER_SIZE));
+    memcpy(decryptedOutput + (i * BUFFER_SIZE), decryptText, copyLength);
+  }
+  
+  // Null terminate the string
+  decryptedOutput[dataLength] = '\0';
+  
+  // Remove padding characters (null bytes at the end)
+  for(int i = dataLength - 1; i >= 0; i--) {
+    if(decryptedOutput[i] == '\0') {
+      continue;
+    } else {
+      decryptedOutput[i + 1] = '\0';
+      break;
+    }
+  }
+}
+
 void handleCORS() {
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -87,7 +144,6 @@ void handleCORS() {
 }
 
 void handleLEDOn() {
-  
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -97,7 +153,6 @@ void handleLEDOn() {
 }
 
 void handleLEDOff() {
-  
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -106,13 +161,31 @@ void handleLEDOff() {
   server.send(200, "text/plain", "LED OFF");
 }
 
+void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
+  receivedFlag = true;
+  
+  // Ensure we don't overflow the buffer
+  size = min(size, (uint16_t)(receivedPayloadSize - 1));
+  memcpy(receivedPayload, payload, size);
+  
+  // Decrypt the received data
+  memset(decryptedPayload, 0, sizeof(decryptedPayload));
+  decryptData((byte*)receivedPayload, decryptedPayload, size);
 
+  Serial.printf("Received encrypted data from master, decrypted: %s | RSSI: %d | SNR: %d\n", decryptedPayload, rssi, snr);
+  
+  // Process the decrypted command
+  processCommand(String(decryptedPayload));
+}
+
+void OnRxTimeout(void){
+  Serial.println("RX Timeout");
+}
 
 void OnTxDone(void) {
   Serial.println("TX done");
   txDoneFlag = true;
 }
-
 
 void OnTxTimeout(void) {
   Serial.println("TX Timeout Callback Fired!");
@@ -124,6 +197,54 @@ void OnTxTimeout(void) {
   txDoneFlag = false; // Indicate failure
 }
 
+void processCommand(String command) {
+  command.trim();
+  command.toLowerCase();
+  
+  Serial.println("Processing command: " + command);
+  
+  if (command == "pump_on") {
+    if (!pumpRunning) {
+      startPump(millis());
+      Serial.println("Remote pump activation received!");
+    } else {
+      Serial.println("Pump already running!");
+    }
+  }
+  else if (command == "pump_off") {
+    if (pumpRunning) {
+      stopPump();
+      Serial.println("Remote pump stop received!");
+    } else {
+      Serial.println("Pump already off!");
+    }
+  }
+  else if (command == "status") {
+    Serial.println("Status request received - sending sensor data");
+    // This will be handled in the main loop to send sensor data
+  }
+  else if (command.startsWith("led_")) {
+    if (command == "led_red") {
+      setRGBColor(true, false, false);
+      Serial.println("LED set to RED");
+    }
+    else if (command == "led_green") {
+      setRGBColor(false, true, false);
+      Serial.println("LED set to GREEN");
+    }
+    else if (command == "led_blue") {
+      setRGBColor(false, false, true);
+      Serial.println("LED set to BLUE");
+    }
+    else if (command == "led_off") {
+      setRGBColor(false, false, false);
+      Serial.println("LED turned OFF");
+    }
+  }
+  else {
+    Serial.println("Unknown command: " + command);
+  }
+}
 
 void init_LoRa_slave(){
   Mcu.begin(HELTEC_BOARD, SLOW_CLK_TPYE);  
@@ -132,7 +253,7 @@ void init_LoRa_slave(){
 
   factory_display.init();
   factory_display.clear();
-  factory_display.drawString(20, 30, "LoRa Sender");
+  factory_display.drawString(20, 30, "LoRa Slave");
   factory_display.display();
   delay(1000);
 
@@ -143,21 +264,33 @@ void init_LoRa_slave(){
   digitalWrite(RST_LoRa, HIGH);
   delay(50);
 
+  RadioEvents.RxDone = OnRxDone;
+  RadioEvents.RxTimeout = OnRxTimeout;
   RadioEvents.TxDone = OnTxDone;
   RadioEvents.TxTimeout = OnTxTimeout;
   Radio.Init(&RadioEvents);
 
   Radio.SetChannel(RF_FREQUENCY);
 
+  // Configure RX settings
+  Radio.SetRxConfig(MODEM_LORA, LORA_BANDWIDTH, LORA_SPREADING_FACTOR,
+                   LORA_CODINGRATE, 0, LORA_PREAMBLE_LENGTH,
+                   LORA_SYMBOL_TIMEOUT, LORA_FIX_LENGTH_PAYLOAD_ON,
+                   0, true, 0, 0, LORA_IQ_INVERSION_ON, true);
+
+  // Configure TX settings
   Radio.SetTxConfig(MODEM_LORA, TX_OUTPUT_POWER, 0, LORA_BANDWIDTH,
                     LORA_SPREADING_FACTOR, LORA_CODINGRATE,
                     LORA_PREAMBLE_LENGTH, LORA_FIX_LENGTH_PAYLOAD_ON,
                     true, 0, 0, LORA_IQ_INVERSION_ON, 3000);
 
-  Serial.println("LoRa Sender initialized");
+  // Start in RX mode to listen for commands
+  Radio.Rx(0);
+
+  Serial.println("LoRa Slave initialized and listening for commands...");
   
   // Print configuration for debugging
-  Serial.println("LoRa Sender configuration:");
+  Serial.println("LoRa Slave configuration:");
   Serial.println("RF_FREQUENCY: " + String(RF_FREQUENCY));
   Serial.println("TX_OUTPUT_POWER: " + String(TX_OUTPUT_POWER));
   Serial.println("LORA_BANDWIDTH: " + String(LORA_BANDWIDTH));
@@ -165,7 +298,6 @@ void init_LoRa_slave(){
   Serial.println("LORA_CODINGRATE: " + String(LORA_CODINGRATE));
   Serial.println("LORA_PREAMBLE_LENGTH: " + String(LORA_PREAMBLE_LENGTH));
 }
-
 
 void setup() {
   Serial.begin(115200); 
@@ -208,15 +340,10 @@ void setup() {
   server.on("/led/on", HTTP_OPTIONS, handleCORS);
   server.on("/led/off", HTTP_OPTIONS, handleCORS);
   
-
   server.on("/led/on",HTTP_GET, handleLEDOn);
   server.on("/led/off",HTTP_GET, handleLEDOff);
 
-
-  server.on("/led/on",HTTP_GET, handleLEDOn);
-  server.on("/led/off",HTTP_GET, handleLEDOff);
   server.begin();
-  
   
   // Test RGB LED on startup
   testRGBLED();
@@ -231,37 +358,60 @@ void setup() {
   delay(1000);
 }
 
-
-
-
 /**
  @def Handle Master - Slave Communication, via LoRaWAN
-
 */
 void handle_ms_communication(){
   Radio.IrqProcess();
 
-  char buffer[40];
-  //sprintf(buffer, "%.2f-%.2f-%d-%d", temperature, humidity, lightLevel, MAC_ID);
-  sprintf(buffer, "%.2f-%.2f-%d-%d", 20.01, 20.232, 200, MAC_ID);
+  // Handle received commands
+  if(receivedFlag) {
+    receivedFlag = false;
+    // Command processing is handled in OnRxDone callback
+    
+    // Return to RX mode to continue listening
+    delay(100);
+    Radio.Rx(0);
+  }
 
-  Serial.print("Attempting to send: ");
+  // Send sensor data periodically (every 10 seconds)
+  static unsigned long lastSensorSend = 0;
+  if(millis() - lastSensorSend >= 10000) {
+    sendSensorData();
+    lastSensorSend = millis();
+  }
+}
+
+void sendSensorData() {
+  char buffer[50];
+  sprintf(buffer, "%.2f-%.2f-%d-%d", temperature, humidity, lightLevel, (int)MAC_ID);
+
+  Serial.print("Sending encrypted sensor data: ");
   Serial.println(buffer);
+
+  // Calculate encrypted data size (must be multiple of 16)
+  int messageLength = strlen(buffer);
+  int encryptedSize = ((messageLength + BUFFER_SIZE - 1) / BUFFER_SIZE) * BUFFER_SIZE;
+  
+  byte encryptedData[encryptedSize];
+  memset(encryptedData, 0, encryptedSize);
+  
+  // Encrypt the message
+  encryptData(buffer, encryptedData, messageLength);
 
   // Show sending status
   factory_display.clear();
-  factory_display.drawString(10, 10, "LoRa Sender");
+  factory_display.drawString(10, 10, "LoRa Slave");
   factory_display.drawString(10, 25, "Packet #: " + String(counter));
-  factory_display.drawString(10, 40, "Msg: " + String(buffer));
-  factory_display.drawString(10, 55, "Sending...");
+  factory_display.drawString(10, 40, "Sending data...");
   factory_display.display();
 
   // Ensure radio is in standby before sending
   Radio.Standby();
   delay(10);
   
-  // Send the message
-  Radio.Send((uint8_t *)buffer, strlen(buffer));
+  // Send the encrypted message
+  Radio.Send(encryptedData, encryptedSize);
 
   unsigned long startTime = millis();
   bool softwareTimeoutOccurred = false;
@@ -280,18 +430,18 @@ void handle_ms_communication(){
 
   // Display result
   factory_display.clear();
+  factory_display.drawString(10, 10, "LoRa Slave");
   factory_display.drawString(10, 25, "Packet #: " + String(counter));
-  factory_display.drawString(10, 40, "Msg: " + String(buffer));
   
   if (txDoneFlag) {
-    Serial.println("TX successful!");
-    factory_display.drawString(10, 55, "SUCCESS!");
+    Serial.println("Encrypted sensor data sent successfully!");
+    factory_display.drawString(10, 40, "Data sent!");
   } else {
-    Serial.println("TX failed!");
+    Serial.println("Failed to send sensor data!");
     if (softwareTimeoutOccurred) {
-      factory_display.drawString(10, 55, "SW TIMEOUT");
+      factory_display.drawString(10, 40, "SW TIMEOUT");
     } else {
-      factory_display.drawString(10, 55, "HW TIMEOUT");
+      factory_display.drawString(10, 40, "HW TIMEOUT");
     }
   }
   factory_display.display();
@@ -300,13 +450,9 @@ void handle_ms_communication(){
   txDoneFlag = false;
   counter++;
 
-  // Wait before next transmission
-  Serial.println("Waiting 5 seconds before next transmission...");
-  unsigned long delayStart = millis();
-  while(millis() - delayStart < 5000) {
-    Radio.IrqProcess();
-    delay(10);
-  }
+  // Return to RX mode to listen for commands
+  delay(100);
+  Radio.Rx(0);
 }
 
 void loop() {

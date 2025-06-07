@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/utils/storage_util.dart';
 import 'package:http/http.dart' as http;
 
+import '../../services/profile_service.dart';
 import '../../utils/api_config.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -12,6 +13,22 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  final ProfileService _profileService = ProfileService();
+  dynamic _role; // Variable to hold user role
+
+  void initState() {
+    super.initState();
+    loadUserProfile();
+  }
+
+  void loadUserProfile() async {
+    final user = await _profileService.getUserProfile();
+    setState(() {
+      _role = user?['role'] ?? 'User';
+    });
+  }
+
+
   void deleteAllMarkers() {
     StorageUtil.deleteMarkers();
   }
@@ -28,7 +45,10 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Column(
+        child: _role == null
+            ? const CircularProgressIndicator() // Show loader while fetching role
+            : _role == "client"
+            ? Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('Settings Page'),
@@ -43,7 +63,8 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text('Delete Database Entries'),
             ),
           ],
-        ),
+        )
+            : const Text("You have no permission to change settings."),
       ),
     );
   }

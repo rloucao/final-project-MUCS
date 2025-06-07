@@ -276,6 +276,7 @@ class _MapPageState extends State<MapPage> {
         lastUpdated: DateTime.now().toUtc(),
         status: 0, // Default status
         isActive: true, // Default to active
+        mac_id: null, // No MAC ID for temporary markers
       );
 
       setState(() {

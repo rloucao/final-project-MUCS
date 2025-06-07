@@ -126,7 +126,7 @@ def get_plants():
 def update_plant_status(mac_id, status):
     try:
         # Update the plant's status
-        supabase.table("hotel_plants").update({"Status": status}).eq("mac_id", mac_id).execute()
+        supabase.table("hotel_plants").update({"status": status}).eq("mac_id", mac_id).execute()
         logger.info(f"Updated plant {mac_id} status to {status}")
     except Exception as e:
         logger.error(f"Error updating plant status: {str(e)}")

@@ -28,7 +28,8 @@ const char* pwd = "hZ7qDeqy9Y";
 #define LORA_FIX_LENGTH_PAYLOAD_ON false
 #define LORA_IQ_INVERSION_ON false
 
-#define BUFFER_SIZE 16  // AES block size
+#define BUFFER_SIZE 16  
+#define HEARTBEAT_INTERVAL 7200000UL
 
 IPAddress serverIP;
 const char *host = "https://final-project-mucs.onrender.com";  
@@ -41,7 +42,7 @@ static RadioEvents_t RadioEvents;
 bool receivedFlag = false;
 const unsigned int receivedPayloadSize = 128;  
 char receivedPayload[receivedPayloadSize]; 
-char decryptedPayload[receivedPayloadSize]; // Buffer for decrypted data
+char decryptedPayload[receivedPayloadSize];
 unsigned long lastStatusUpdate = 0;
 unsigned long packetCount = 0;
 int counter = 0;
@@ -58,7 +59,56 @@ byte cipherText[BUFFER_SIZE];
 byte decryptText[BUFFER_SIZE];
 byte plaintext[BUFFER_SIZE];
 
-//Function to encrypt the data to then be sent
+
+void send_heartbeat_ping(){
+  if (heartbeatInProgress) {
+    Serial.println("Heartbeat already in progress, skipping...");
+    return;
+  }
+  
+  heartbeatInProgress = true;
+  
+  const char* heartbeatMsg = "HEARTBEAT";
+  Serial.println("Sending heartbeat ping to slaves...");
+  
+  Radio.Standby();
+  delay(50);
+  
+  int messageLength = strlen(heartbeatMsg);
+  int encryptedSize = ((messageLength + BUFFER_SIZE - 1) / BUFFER_SIZE) * BUFFER_SIZE;
+  
+  byte encryptedData[encryptedSize];
+  memset(encryptedData, 0, encryptedSize);
+  
+  encryptData(heartbeatMsg, encryptedData, messageLength);
+  
+  Radio.Send(encryptedData, encryptedSize);
+  
+  unsigned long startTime = millis();
+  txDoneFlag = false;
+  
+  while (!txDoneFlag) {
+    Radio.IrqProcess();
+    delay(10);
+    if (millis() - startTime > 3000) {
+      Serial.println("Heartbeat TX timeout!");
+      break;
+    }
+  }
+  
+  if (txDoneFlag) {
+    Serial.println("Heartbeat sent successfully");
+  } else {
+    Serial.println("Failed to send heartbeat");
+  }
+  
+  txDoneFlag = false;
+  heartbeatInProgress = false;
+  
+  delay(100);
+  Radio.Rx(0);
+}
+
 void encryptData(const char *data, byte *encryptedData, int dataLength) {
   aes.setKey(key, sizeof(key));
   
@@ -74,13 +124,11 @@ void encryptData(const char *data, byte *encryptedData, int dataLength) {
   }
 }
 
-//Function to decrypt the received (encrypted) data
 void decryptData(const byte *encryptedData, char *decryptedOutput, int dataLength) {
   aes.setKey(key, sizeof(key));
   
-  // Process data in 16-byte blocks
-  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; // Ceiling division
-  
+  int blocks = (dataLength + BUFFER_SIZE - 1) / BUFFER_SIZE; 
+
   for(int i = 0; i < blocks; i++) {
     aes.decryptBlock(decryptText, encryptedData + (i * BUFFER_SIZE));
     
@@ -88,10 +136,8 @@ void decryptData(const byte *encryptedData, char *decryptedOutput, int dataLengt
     memcpy(decryptedOutput + (i * BUFFER_SIZE), decryptText, copyLength);
   }
   
-  // Null terminate the string
   decryptedOutput[dataLength] = '\0';
   
-  // Remove padding characters (null bytes at the end)
   for(int i = dataLength - 1; i >= 0; i--) {
     if(decryptedOutput[i] == '\0') {
       continue;
@@ -141,8 +187,6 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
 
 void OnRxTimeout(void){
   Serial.println("RX Timeout");
-  // Don't put radio to sleep on timeout, just continue listening
-  // The radio will automatically continue in RX mode
 }
 
 void OnTxDone(void) {
@@ -152,7 +196,7 @@ void OnTxDone(void) {
 
 void OnTxTimeout(void) {
   Serial.println("TX Timeout Callback Fired!");
-  txDoneFlag = false; // Indicate failure
+  txDoneFlag = false; 
 }
 
 void send_message_to_client(int status_code, String message){
@@ -160,26 +204,18 @@ void send_message_to_client(int status_code, String message){
 }
 
 void send_message_to_slave(){
-  if (!server.hasArg("msg")) {
-    display_message(20, 40, "Missing message");
-    server.send(400, "text/plain", "Missing ?msg= parameter");
-    return;
-  }
 
-  String message = server.arg("msg");
-  display_message(20, 40 , "Attempting to send: " + message);
+  display_message(20, 40 , "Fetching new sensor results");
 
-  // Switch to TX mode
+
   Radio.Standby();
-  
-  // Calculate encrypted data size (must be multiple of 16)
+  String message = "sensor_data";
   int messageLength = message.length();
   int encryptedSize = ((messageLength + BUFFER_SIZE - 1) / BUFFER_SIZE) * BUFFER_SIZE;
   
   byte encryptedData[encryptedSize];
   memset(encryptedData, 0, encryptedSize);
   
-  // Encrypt the message
   encryptData(message.c_str(), encryptedData, messageLength);
   
   Serial.println("Sending encrypted message, original: " + message);
@@ -219,8 +255,19 @@ void send_sensor_data_to_server(){
   // Use decrypted payload for server communication
   String data = String(decryptedPayload);
 
+  
+  char buffer[50];
+  int messageLength = strlen(buffer);
+  int encryptedSize = ((messageLength + BUFFER_SIZE - 1) / BUFFER_SIZE) * BUFFER_SIZE;
+  
+  byte encryptedData[encryptedSize];
+  memset(encryptedData, 0, encryptedSize);
+  
+  // Encrypt the message
+  encryptData(buffer, encryptedData, messageLength);
+
   client.setInsecure(); 
-  String path = String(host) + "/send_sensor_data?data=" + data;
+  String path = String(host) + "/send_sensor_data?data=" + encryptedData;
   
   Serial.println("Sending to server: " + data);
 
@@ -272,7 +319,7 @@ void wifi_connect(){
 void set_up_server(){
   server.on("/led", HTTP_OPTIONS, handleCORS);
   server.on("/led",HTTP_GET, handle_LED);
-  server.on("/slave",HTTP_GET, send_message_to_slave);
+  server.on("/slave", HTTP_GET, send_message_to_slave);
   server.begin();
   Serial.println("HTTP server started");
 }
@@ -335,35 +382,34 @@ void setup() {
 }
 
 void loop() {
-  // Handle HTTP requests
   server.handleClient();
 
-  // Process LoRa interrupts
   Radio.IrqProcess();
 
-  // Handle received LoRa messages
   if(receivedFlag){
     receivedFlag = false;
     
     Serial.println("Processing received message: " + String(decryptedPayload));
     
-    // Send to server (using decrypted data)
     delay(10000);
     send_sensor_data_to_server();
     
-    // Small delay before returning to RX mode
     delay(100);
     
-    // Ensure we're back in RX mode
     Radio.Rx(0);
   }
 
-  // Status update every 10 seconds
+  if(millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+    lastHeartbeat = millis();
+    send_heartbeat_ping();
+  }
+
+
   static unsigned long lastHeartBeat = 0;
   if(millis() - lastHeartBeat > 10000){
     lastHeartBeat = millis();
-    
-    if(!receivedFlag) { // Only update display if not currently processing a message
+    hearbeat_ping();
+    if(!receivedFlag) { 
       factory_display.clear();
       factory_display.drawString(0, 0, "LoRa Master");
       factory_display.drawString(0, 20, "Listening...");

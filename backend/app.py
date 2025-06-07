@@ -134,21 +134,14 @@ def update_plant_status(mac_id, status):
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
-    # data = 25.60-60.30-450-1234567890
-    # data = -1-1-1-1234567890
 
-    # ['' , '1' ,'', '1' ,'' , '1', '1234567890']
-
-    # Data is encrypted using AES-128: temperature-humidity-light-MAC_ID
     logger.info(f"Encrypted data: {data}") 
 
 
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    # Decrypt data
-    # res = decrypt_aes128_ecb(data)   
-
+    
     logger.info(f"Decrypted data: {data}") 
     
     parts = data.split('/')
@@ -213,7 +206,7 @@ def receive_data():
         # Update the plant's last_intervened time with proper timestamp
         current_time = datetime.utcnow().isoformat()
         supabase.table("hotel_plants").update({
-            "last_intervened": current_time
+            "lastUpdated": current_time
         }).eq("mac_id", mac_id).execute()
         
         #print(f"Successfully saved data for MAC: {mac_id}")

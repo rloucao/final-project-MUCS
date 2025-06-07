@@ -5,7 +5,6 @@ import 'package:mobile/models/hotel.dart';
 import 'package:mobile/services/hotel_data_service.dart';
 import 'package:mobile/pages/authenticated/map_page.dart';
 import 'package:mobile/components/hotel_card.dart';
-import 'package:mobile/utils/storage_util.dart';
 import 'package:provider/provider.dart';
 import '../../providers/hotel_plants_provider.dart';
 import '../../providers/selected_hotel_provider.dart';
@@ -14,14 +13,14 @@ class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState(); 
+  _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   final HotelDataService _hotelService = HotelDataService();
   late List<Hotel> _hotels;
   late List<Hotel> _filteredHotels;
-  bool _isLoading = false;
+  bool _isLoading = true; // Changed to true initially since we're loading at start
   bool _isLocationFiltered = false;
   Position? _currentPosition;
 
@@ -30,6 +29,9 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _hotels = _hotelService.getAllHotels();
     _filteredHotels = List.from(_hotels);
+
+    // Automatically get location and filter when app starts
+    _getCurrentLocation();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -66,7 +68,7 @@ class _HomePageState extends State<HomePage> {
       // Sort hotels by distance
       _filteredHotels = List.from(_hotels);
       _filteredHotels.sort(
-        (a, b) => (a.distanceFromUser ?? double.infinity).compareTo(
+            (a, b) => (a.distanceFromUser ?? double.infinity).compareTo(
           b.distanceFromUser ?? double.infinity,
         ),
       );
@@ -78,6 +80,8 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
+        // If location fails, show regular unsorted list
+        _filteredHotels = List.from(_hotels);
       });
       ScaffoldMessenger.of(
         context,
@@ -155,7 +159,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           actions: [
-            // Location filter button
+            // Still keep the reset button for user to reset the filter if needed
             _isLoading
                 ? Container(
               margin: EdgeInsets.only(right: 8),
@@ -169,7 +173,7 @@ class _HomePageState extends State<HomePage> {
                 : IconButton(
               icon: Icon(
                 _isLocationFiltered
-                    ? Icons.location_on
+                    ? Icons.location_off  // Changed icon to indicate turning off location filter
                     : Icons.location_searching,
                 color: Colors.black87, // Match title color
               ),
@@ -182,7 +186,32 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         // The body remains mostly the same
-        body: _filteredHotels.isEmpty
+        body: _isLoading
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Finding hotels near you...',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(1, 1),
+                      blurRadius: 3.0,
+                      color: Colors.white.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        )
+            : _filteredHotels.isEmpty
             ? Center(
           child: Text(
             'No hotels available',

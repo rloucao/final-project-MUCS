@@ -66,7 +66,6 @@ class HotelCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: GestureDetector(
-                        // This prevents the tap from propagating to the card
                         onTap: () {
                           // Deselect the hotel
                           selectedHotelProvider.clearSelection();
@@ -78,7 +77,7 @@ class HotelCard extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            Icons.close, // Changed to close icon to indicate deselection
+                            Icons.close,
                             color: Colors.white,
                             size: 16,
                           ),

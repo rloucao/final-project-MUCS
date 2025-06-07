@@ -1,4 +1,3 @@
-// lib/pages/authenticated/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mobile/models/hotel.dart';
@@ -8,6 +7,7 @@ import 'package:mobile/components/hotel_card.dart';
 import 'package:provider/provider.dart';
 import '../../providers/hotel_plants_provider.dart';
 import '../../providers/selected_hotel_provider.dart';
+import '../../services/profile_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -18,23 +18,46 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final HotelDataService _hotelService = HotelDataService();
+  final ProfileService _profileService = ProfileService();
   late List<Hotel> _hotels;
   late List<Hotel> _filteredHotels;
-  bool _isLoading = true; // Changed to true initially since we're loading at start
+  bool _isLoading = true;
   bool _isLocationFiltered = false;
   Position? _currentPosition;
+  String? _userRole;
 
   @override
   void initState() {
     super.initState();
-    _hotels = _hotelService.getAllHotels();
-    _filteredHotels = List.from(_hotels);
-
-    // Automatically get location and filter when app starts
-    _getCurrentLocation();
+    _loadUserAndHotels();
   }
 
-  Future<void> _getCurrentLocation() async {
+  // Load user profile and hotels, then apply appropriate filtering
+  Future<void> _loadUserAndHotels() async {
+    try {
+      // Load user profile to get role
+      final user = await _profileService.getUserProfile();
+      _userRole = user?['role'];
+
+      // Load all hotels
+      _hotels = _hotelService.getAllHotels();
+      _filteredHotels = List.from(_hotels);
+
+      // Get location for all users to calculate distances
+      await _getCurrentLocation(autoSelect: _userRole == 'client');
+
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _filteredHotels = List.from(_hotels ?? []);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e'))
+      );
+    }
+  }
+
+  Future<void> _getCurrentLocation({bool autoSelect = false}) async {
     setState(() {
       _isLoading = true;
     });
@@ -72,6 +95,19 @@ class _HomePageState extends State<HomePage> {
           b.distanceFromUser ?? double.infinity,
         ),
       );
+
+      // If this is a client user, we should autoSelect the closest hotel
+      if (autoSelect && _filteredHotels.isNotEmpty) {
+        // Get the closest hotel
+        Hotel closestHotel = _filteredHotels.first;
+
+        // Auto-select this hotel
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _setHotel(closestHotel);
+          }
+        });
+      }
 
       setState(() {
         _isLocationFiltered = true;
@@ -113,6 +149,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the selected hotel for UI purposes
+    final selectedHotel = context.watch<SelectedHotelProvider>().selectedHotel;
+
     return Container(
       // This container covers the entire screen
       decoration: BoxDecoration(
@@ -133,7 +172,7 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: Text(
-            'Hotels',
+            selectedHotel != null ? selectedHotel.name : 'Hotels',
             style: TextStyle(
               color: Colors.black87,
               fontWeight: FontWeight.bold,
@@ -159,7 +198,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           actions: [
-            // Still keep the reset button for user to reset the filter if needed
             _isLoading
                 ? Container(
               margin: EdgeInsets.only(right: 8),
@@ -173,7 +211,7 @@ class _HomePageState extends State<HomePage> {
                 : IconButton(
               icon: Icon(
                 _isLocationFiltered
-                    ? Icons.location_off  // Changed icon to indicate turning off location filter
+                    ? Icons.location_on
                     : Icons.location_searching,
                 color: Colors.black87, // Match title color
               ),
@@ -181,7 +219,7 @@ class _HomePageState extends State<HomePage> {
                   ? 'Reset filter'
                   : 'Show nearest hotels',
               onPressed:
-              _isLocationFiltered ? _resetFilter : _getCurrentLocation,
+              _isLocationFiltered ? _resetFilter : () => _getCurrentLocation(autoSelect: _userRole == 'client'),
             ),
           ],
         ),

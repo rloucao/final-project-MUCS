@@ -8,6 +8,7 @@ import ast
 import os
 import logging
 from datetime import datetime
+from Crypto import decrypt_aes128_ecb 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -128,11 +129,16 @@ def get_plants():
 def receive_data():
     data = request.args.get('data')
     # data = 25.60-60.30-450-1234567890
+
+    # Data is encrypted using AES-128: temperature-humidity-light-MAC_ID
     
     if not data:
         return jsonify({"error": "No data provided"}), 400
+
+    # Decrypt data
+    res = decrypt_aes128_ecb(data)    
     
-    parts = data.split('-')
+    parts = res.split('-')
     
     try:
         temp = float(parts[0]) if len(parts) > 0 else None

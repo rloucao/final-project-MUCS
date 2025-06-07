@@ -136,7 +136,9 @@ def receive_data():
         return jsonify({"error": "No data provided"}), 400
 
     # Decrypt data
-    res = decrypt_aes128_ecb(data)    
+    res = decrypt_aes128_ecb(data)   
+
+    logger.info(f"Decrypted data: {res}") 
     
     parts = res.split('-')
     
@@ -203,7 +205,6 @@ def receive_data():
     
     return jsonify({"success": True}), 200
 
-  
 @app.route('/plant_list', methods=['GET'])
 def get_plant_list():
     try:

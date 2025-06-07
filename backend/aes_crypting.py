@@ -1,11 +1,14 @@
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
 import binascii
 
+# Your AES key (same as Arduino)
 key = bytes([0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
             0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81])
-            
+
 def decrypt_aes128_ecb(encrypted_data_hex):
+    """
+    Decrypt AES128 ECB encrypted data (matches Arduino implementation)
+    """
     try:
         # Convert hex string to bytes
         encrypted_data = binascii.unhexlify(encrypted_data_hex)
@@ -17,7 +20,6 @@ def decrypt_aes128_ecb(encrypted_data_hex):
         decrypted_data = cipher.decrypt(encrypted_data)
         
         # Remove null byte padding (like Arduino does)
-        # Find the last non-null byte
         end_pos = len(decrypted_data)
         for i in range(len(decrypted_data) - 1, -1, -1):
             if decrypted_data[i] != 0:

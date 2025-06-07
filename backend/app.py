@@ -143,7 +143,6 @@ def receive_data():
         return jsonify({"error": "No data provided"}), 400
 
     
-
     logger.info(f"Decrypted data: {data}") 
     
     parts = data.split('/')
@@ -208,7 +207,7 @@ def receive_data():
         # Update the plant's last_intervened time with proper timestamp
         current_time = datetime.utcnow().isoformat()
         supabase.table("hotel_plants").update({
-            "last_intervened": current_time
+            "lastUpdated": current_time
         }).eq("mac_id", mac_id).execute()
         
         #print(f"Successfully saved data for MAC: {mac_id}")

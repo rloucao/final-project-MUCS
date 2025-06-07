@@ -9,7 +9,7 @@ class MapMarker {
   DateTime lastUpdated; // Timestamp for last update
   int status; // status of the plant
   bool isActive;
-  int? mac_id;
+  String? mac_id;
 
 
   MapMarker({
@@ -44,6 +44,7 @@ class MapMarker {
   }
 
   factory MapMarker.fromJson(Map<String, dynamic> json) {
+    // debug print to check the JSON structure
     return MapMarker(
       id: json['id'],
       x: json['x'],

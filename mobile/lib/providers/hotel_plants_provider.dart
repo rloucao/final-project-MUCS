@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/services/marker_sync_service.dart';
 import '../utils/storage_util.dart';
 
 
@@ -18,11 +19,11 @@ class HotelPlantsProvider with ChangeNotifier {
     _hotelId = hotelId;
 
     try {
-      // Load markers and plant details from disk
-      final markersFromDisk = await StorageUtil.loadMarkers();
+      // Load markers and plant details
+      final markers = await MarkerSyncService.syncMarkers(null);
       final plantDetailsFromDisk = await StorageUtil.loadPlantDetails();
 
-      final filteredMarkers = markersFromDisk.where((marker) => marker.hotelId == hotelId).toList();
+      final filteredMarkers = markers.where((marker) => marker.hotelId == hotelId).toList();
       final plantDetailMap = {for (var detail in plantDetailsFromDisk) detail.id: detail};
 
       final List<Map<String, dynamic>> combinedList = [];
@@ -41,6 +42,7 @@ class HotelPlantsProvider with ChangeNotifier {
             'lastUpdated': marker.lastUpdated.toIso8601String(),
             'status': marker.status,
             'isActive': marker.isActive,
+            'mac_id': marker.mac_id,
             'plant_details': plantDetail.toJson(),
           });
         } else {

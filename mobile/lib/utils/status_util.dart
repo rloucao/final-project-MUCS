@@ -28,4 +28,17 @@ class StatusUtil {
         return "Status: Unknown";
     }
   }
+
+  static int encodeStatus(String status) {
+    switch (status.toLowerCase()) {
+      case "dead":
+        return 1;
+      case "not healthy":
+        return 2;
+      case "healthy":
+        return 3;
+      default:
+        return 0; // Unknown status
+    }
+  }
 }

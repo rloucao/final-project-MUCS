@@ -288,13 +288,27 @@ def get_plant_info():
 @app.route('/markers', methods=['GET'])
 def get_markers():
     try:
-        # Fetch columns id, hotelId, typeId, x, y, floorIndex, roomId from hotel_plants
+        # Fetch columns id, hotelId, typeId, x, y, floorIndex, roomId, lastUpdated, isActive, mac_id from hotel_plants
         response = supabase.from_("hotel_plants").select("*").execute()
         #print(response)
         markers = response.data
+
         return jsonify({"markers": markers}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/sensor_data/<mac_id>', methods=['GET'])
+def get_sensor_data(mac_id):
+    try:
+        if not mac_id:
+            return jsonify({"error": "MAC ID is required"}), 400
+        # Fetch sensor data for the given MAC ID from supabase plant_info table
+        sensor_data = supabase.from_("plant_info").select("*").eq("MAC_ID", mac_id).execute().data
+        # always return sensor data, even if empty
+        return jsonify({"sensor_data": sensor_data}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/add', methods=['POST'])
 def add_marker():

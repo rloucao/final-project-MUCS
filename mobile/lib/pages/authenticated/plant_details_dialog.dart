@@ -3,10 +3,13 @@ import 'package:mobile/models/map_marker.dart';
 import 'package:mobile/services/marker_sync_service.dart';
 import 'package:mobile/services/profile_service.dart';
 import 'dart:convert';
+import '../../components/snackbar.dart';
 import '../../services/arduino_service.dart';
+import '../../utils/api_config.dart';
 import 'full_screen_image_page.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/utils/status_util.dart';
+import 'package:http/http.dart' as http;
 
 import 'map_page.dart';
 
@@ -103,6 +106,7 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                   lastUpdated: DateTime.now().toUtc(),
                   status: plantData!["status"],
                   isActive: false, // Set to false to mark as deleted
+                  mac_id: plantData?["mac_id"], // No sensor data for deletion
                 );
                 await MarkerSyncService.syncSingleMarker(marker);
                 print("Plant ${plantData!["id"]} deleted successfully");
@@ -137,6 +141,154 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
     await Future.delayed(Duration(seconds: 2));
 
     service.disconnect();
+  }
+
+  Future<void> _showPlantStatusOverlay(BuildContext context) async {
+    final macId = plantData?["mac_id"];
+    print("Plant MAC ID: $macId");
+
+    if (macId == null) {
+      animatedSnackbar.show(
+        context: context,
+        message: "Plant has no sensor data",
+        type: SnackbarType.warning,
+      );
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/sensor_data/$macId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      /*print(response.statusCode);
+      print(response.body);*/
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body)['sensor_data'];
+        print("Sensor data response: $data");
+
+        if (data == null || data.isEmpty) {
+          animatedSnackbar.show(
+            context: context,
+            message: "Plant has no sensor data",
+            type: SnackbarType.info,
+          );
+          return;
+        }
+
+        // Filter the latest entry based on 'created_at'
+        final sensorList = List<Map<String, dynamic>>.from(data);
+        sensorList.sort((a, b) =>
+            DateTime.parse(a['created_at']).compareTo(DateTime.parse(b['created_at'])));
+        final latest = sensorList.last;
+
+        print("Latest sensor data: $latest");
+        // if marker sensor status differs from plant status, update marker
+        // TODO check if this works correctly
+        if (plantData!["status"] != latest["Status"]) {
+          print("HALLLOOO VERDAMMMTE SCHEISSE");
+          print("Type of latest status: ${latest["Status"].runtimeType}");
+          MapMarker marker = MapMarker(
+            id: plantData!["id"],
+            hotelId: plantData!["hotelId"],
+            typeId: plantData!["typeId"],
+            x: plantData!["x"],
+            y: plantData!["y"],
+            floorIndex: plantData!["floorIndex"],
+            roomId: plantData!["roomId"],
+            lastUpdated: DateTime.now().toUtc(),
+            status: latest["Status"],
+            isActive: true,
+            mac_id: macId,
+          );
+          print("Update Time: ${marker.lastUpdated}");
+          MarkerSyncService.syncSingleMarker(marker);
+        }
+
+
+        // Show sensor data dialog
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text("Plant Status"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Last Updated: ${_formatTimestamp(latest['created_at'])}"),
+                  const SizedBox(height: 8),
+                  Text.rich(
+                    TextSpan(
+                      text: "Temperature: ",
+                      children: [
+                        TextSpan(
+                          text: "${latest['Temp']}°C",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            //color: Colors.orange, // Customize color
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Text.rich(
+                    TextSpan(
+                      text: "Moisture: ",
+                      children: [
+                        TextSpan(
+                          text: "${latest['Moisture']}%",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            //color: Colors.blue, // Customize color
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Text.rich(
+                    TextSpan(
+                      text: "Light: ",
+                      children: [
+                        TextSpan(
+                          text: "${latest['Light']} lux",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            // color: Colors.green, // Customize color
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Close"),
+                ),
+              ],
+            );
+          },
+        );
+      }
+      else {
+        animatedSnackbar.show(
+          context: context,
+          message: "Plant has no sensor data",
+          type: SnackbarType.error,
+        );
+      }
+    } catch (e) {
+      animatedSnackbar.show(
+        context: context,
+        message: "No network connection.",
+        type: SnackbarType.error,
+      );
+    }
   }
 
   @override
@@ -220,9 +372,15 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              StatusUtil.getStatusText(plantData!["status"]),
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            TextButton(
+                              onPressed: plantData!["status"] > 0
+                                  ? () => _showPlantStatusOverlay(context)
+                                  : null,
+                              child: Text(
+                                StatusUtil.getStatusText(plantData!["status"]),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
                             ),
                             Row(
                               mainAxisSize: MainAxisSize.min,
@@ -252,9 +410,15 @@ class _PlantDetailDialogState extends State<PlantDetailDialog> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              StatusUtil.getStatusText(plantData!["status"]),
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            TextButton(
+                              onPressed: plantData!["status"] > 0
+                                  ? () => _showPlantStatusOverlay(context)
+                                  : null,
+                              child: Text(
+                                StatusUtil.getStatusText(plantData!["status"]),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Row(

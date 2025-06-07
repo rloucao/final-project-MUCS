@@ -90,6 +90,8 @@ class _MapPageState extends State<MapPage> {
         });
       }
     }
+
+    _loadProfile();
   }
 
   @override

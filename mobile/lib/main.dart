@@ -14,7 +14,7 @@ void main() {
     MultiProvider(
       providers: [
         // Auth state (with auto-login)
-        ChangeNotifierProvider(create: (_) => AuthService()..autoLogin()),
+        ChangeNotifierProvider(create: (_) => AuthService()),//..autoLogin()),
         // Other providers (e.g., hotel selection)
         ChangeNotifierProvider(create: (_) => SelectedHotelProvider()),
         ChangeNotifierProvider(create: (_) => HotelPlantsProvider()),

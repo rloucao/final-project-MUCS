@@ -27,6 +27,7 @@ class StorageUtil {
       'lastUpdated': m.lastUpdated.toIso8601String(),
       'status': m.status,
       'isActive': m.isActive,
+      'mac_id': m.mac_id,
     }).toList();
     await prefs.setString(_markerKey, jsonEncode(markerData));
   }

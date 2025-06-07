@@ -9,6 +9,7 @@ class MapMarker {
   DateTime lastUpdated; // Timestamp for last update
   int status; // status of the plant
   bool isActive;
+  int? mac_id;
 
 
   MapMarker({
@@ -22,6 +23,7 @@ class MapMarker {
     required this.lastUpdated,
     required this.status,
     required this.isActive,
+    this.mac_id,
   });
 
   // Add from/to JSON methods for storage
@@ -37,6 +39,7 @@ class MapMarker {
       'lastUpdated': lastUpdated.toIso8601String(),
       'status': status,
       'isActive': isActive,
+      'mac_id': mac_id,
     };
   }
 
@@ -52,6 +55,7 @@ class MapMarker {
       lastUpdated: DateTime.parse(json['lastUpdated']).toUtc(),
       status: json['status'] ?? 0, // Default to 0 if not provided
       isActive: json['isActive'] ?? false, // Default to false if not provided
+      mac_id: json['mac_id'],
     );
   }
 }

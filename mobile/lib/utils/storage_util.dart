@@ -89,9 +89,10 @@ class StorageUtil {
         floorIndex: data['floorIndex'] ?? 0,
         roomId: data['roomId'],
         typeId: data['typeId'] ?? 0,
-        lastUpdated: DateTime.parse(data['lastUpdated'] ?? DateTime.parse("1900-01-01T00:00:00Z")), // should never happen
+        lastUpdated: DateTime.parse(data['lastUpdated'] ?? DateTime.parse("1900-01-01T00:00:00Z").toUtc()), // should never happen
         status: data['status'] ?? 0, // Default to 0 if not provided
         isActive: data['isActive'] ?? false, // Default to false if not provided
+        mac_id: data['mac_id'],
       )).toList();
     } catch (e) {
       print('Error loading markers: $e');

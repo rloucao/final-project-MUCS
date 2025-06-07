@@ -136,11 +136,11 @@ def receive_data():
         return jsonify({"error": "No data provided"}), 400
 
     # Decrypt data
-    res = decrypt_aes128_ecb(data)   
+    # res = decrypt_aes128_ecb(data)   
 
-    logger.info(f"Decrypted data: {res}") 
+    logger.info(f"Decrypted data: {data}") 
     
-    parts = res.split('-')
+    parts = data.split('-')
     
     try:
         temp = float(parts[0]) if len(parts) > 0 else None

@@ -1,5 +1,4 @@
 from http.client import responses
-
 from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from config import Config
@@ -8,6 +7,7 @@ import ast
 import os
 import logging
 from datetime import datetime
+from aes_crypting import decrypt_aes128_ecb 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,7 +59,6 @@ def login():
     except Exception as e:
         return jsonify({"error": str(e)}, 500)
         
-
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.json
@@ -124,15 +123,37 @@ def get_plants():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}, 500)
 
+def update_plant_status(mac_id, status):
+    try:
+        # Update the plant's status
+        supabase.table("hotel_plants").update({"status": status}).eq("mac_id", mac_id).execute()
+        logger.info(f"Updated plant {mac_id} status to {status}")
+    except Exception as e:
+        logger.error(f"Error updating plant status: {str(e)}")
+
+
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')
     # data = 25.60-60.30-450-1234567890
-    
+    # data = -1-1-1-1234567890
+
+    # ['' , '1' ,'', '1' ,'' , '1', '1234567890']
+
+    # Data is encrypted using AES-128: temperature-humidity-light-MAC_ID
+    logger.info(f"Encrypted data: {data}") 
+
+
     if not data:
         return jsonify({"error": "No data provided"}), 400
+
+    # Decrypt data
+    # res = decrypt_aes128_ecb(data)   
+
+    logger.info(f"Decrypted data: {data}") 
     
-    parts = data.split('-')
+    parts = data.split('/')
+    logger.info(f"Split data parts: {parts}")
     
     try:
         temp = float(parts[0]) if len(parts) > 0 else None
@@ -158,16 +179,22 @@ def receive_data():
         # Check if plant exists
         #print("checking if plant exists in database...")
         logger.info("Checking if plant exists in database...")
-        res = supabase.table("plant").select("*").eq("mac_id", mac_id).execute()
+        res = supabase.table("hotel_plants").select("*").eq("mac_id", mac_id).execute()
         #print(res.data)
         logger.info(f"Plant check result: {res.data}")
 
         if not res.data:
             #print("Plant not found. Inserting new entry...")
             logger.info("Plant not found. Inserting new entry...")
-            supabase.table("plant").insert({
+            supabase.table("hotel_plants").insert({
                 "mac_id": mac_id,
-                "name": '[''Abutilon hybridum'']', 
+                "type_id": "552", 
+                "hotel" : 1, # Default type_id, adjust as needed
+                "x" : 122.3231,
+                "y" : 123.1223,
+                "floor_index": 1,
+                "room_id": 1,
+                "is_active": True,
                 "location": "lobby"
             }).execute()
             #print(f"Created new plant entry for MAC: {mac_id}")
@@ -179,12 +206,14 @@ def receive_data():
             "Temp": temp,
             "Moisture": humidity,
             "Light": light,
-            "Status": "healthy"
+            "Status": "1"
         }).execute()
         
+        update_plant_status(mac_id, "1")  # Update status to '1' (active)
+
         # Update the plant's last_intervened time with proper timestamp
         current_time = datetime.utcnow().isoformat()
-        supabase.table("plant").update({
+        supabase.table("hotel_plants").update({
             "last_intervened": current_time
         }).eq("mac_id", mac_id).execute()
         
@@ -197,7 +226,6 @@ def receive_data():
     
     return jsonify({"success": True}), 200
 
-  
 @app.route('/plant_list', methods=['GET'])
 def get_plant_list():
     try:

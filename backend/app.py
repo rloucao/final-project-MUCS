@@ -166,16 +166,22 @@ def receive_data():
         # Check if plant exists
         #print("checking if plant exists in database...")
         logger.info("Checking if plant exists in database...")
-        res = supabase.table("plant").select("*").eq("mac_id", mac_id).execute()
+        res = supabase.table("hotel_plants").select("*").eq("mac_id", mac_id).execute()
         #print(res.data)
         logger.info(f"Plant check result: {res.data}")
 
         if not res.data:
             #print("Plant not found. Inserting new entry...")
             logger.info("Plant not found. Inserting new entry...")
-            supabase.table("plant").insert({
+            supabase.table("hotel_plants").insert({
                 "mac_id": mac_id,
-                "name": '[''Abutilon hybridum'']', 
+                "type_id": "552", 
+                "hotel" : 1, # Default type_id, adjust as needed
+                "x" : 122.3231,
+                "y" : 123.1223,
+                "floor_index": 1,
+                "room_id": 1,
+                "is_active": True,
                 "location": "lobby"
             }).execute()
             #print(f"Created new plant entry for MAC: {mac_id}")
@@ -192,7 +198,7 @@ def receive_data():
         
         # Update the plant's last_intervened time with proper timestamp
         current_time = datetime.utcnow().isoformat()
-        supabase.table("plant").update({
+        supabase.table("hotel_plants").update({
             "last_intervened": current_time
         }).eq("mac_id", mac_id).execute()
         

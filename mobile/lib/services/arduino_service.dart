@@ -52,11 +52,10 @@ class ArduinoService with ChangeNotifier {
   
   // Send message to Arduino
   Future<void> sendMessage(String message) async {
-      final ip = "http://192.168.1.166";
+      final ip = "http://192.168.95.199";
       ///final url = message == "on" ? "$ip/led/on" : "$ip/led/off";
       final url = "$ip/led";
       final response = await http.get(Uri.parse(url));
-
 
       if(response.statusCode == 200){
         print("Message sent successfully: ${response.body}");

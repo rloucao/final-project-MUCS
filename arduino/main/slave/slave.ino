@@ -8,16 +8,16 @@
  * - Water Pump (via Relay)
  * - RGB LED Status Indicator
  *
- * Author: NoxGhost
- * Date: 2025-06-05
  */
 
 #include <DHT.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <HTTPClient.h>
 #include "Arduino.h"
 #include "LoRaWan_APP.h"
 #include "HT_SSD1306Wire.h"
+#include <WiFiClientSecure.h>
 
 
 //const char* ssid = "Vodafone-18E4A0";
@@ -46,8 +46,7 @@ WebServer server(80);
 #define LORA_IQ_INVERSION_ON false
 
 
-
-
+uint64_t MacId = ESP.getEfuseMac();
 
 
 // DHT11 Configuration
@@ -83,6 +82,15 @@ const unsigned long PUMP_RUN_TIME = 2000;     // 5 seconds for testing
 const unsigned long PUMP_INTERVAL = 1000;    // 15 seconds between cycles for testing (TODO)
 const unsigned long SENSOR_INTERVAL = 2000;   // 2 seconds between readings
 const unsigned long LED_CYCLE_TIME = 1500;    // 1.5 seconds per color
+
+const unsigned int receivedPayloadSize = 128;  
+char receivedPayload[receivedPayloadSize]; 
+
+bool masterAlive = true;
+unsigned long lastPinged = 0;
+#define HEARBEAT_VALIDITY 7200000UL // 2 hours
+
+WiFiClientSecure client;
 
 
 
@@ -127,7 +135,26 @@ void handle_Pump() {
     server.send(200, "text/plain", "Pump ran");
 }
 
+void onRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr){
+ //Handle the signal interpretation
 
+   // Ensure we don't overflow the buffer
+  size = min(size, (uint16_t)(receivedPayloadSize - 1));
+  memcpy(receivedPayload, payload, size);
+  if(receivedPayload == "sensor_data"){
+    //send_data
+    handle_ms_communication();
+  }
+  else if(receivedPayload == "HEARTBEAT"){
+    lastPinged = millis();
+  }
+
+
+}
+
+void onRxTimeout(void){
+Serial.println("RX Timeout");
+}
 
 void OnTxDone(void) {
     Serial.println("TX done");
@@ -141,7 +168,7 @@ void OnTxTimeout(void) {
     factory_display.drawString(10, 40, "Packet #: " + String(counter));
     factory_display.drawString(10, 50, "TX TIMEOUT");
     factory_display.display();
-    txDoneFlag = false; // Indicate failure
+    txDoneFlag = false; 
 }
 
 void init_LoRa_slave(){
@@ -153,25 +180,33 @@ void init_LoRa_slave(){
     factory_display.display();
     delay(1000);
 
-    // Reset the radio before configuring
+    
     pinMode(RST_LoRa, OUTPUT);
     digitalWrite(RST_LoRa, LOW);
     delay(50);
     digitalWrite(RST_LoRa, HIGH);
     delay(50);
 
+      
+    RadioEvents.RxDone = onRxDone;
+    RadioEvents.RxTimeout = onRxTimeout;
     RadioEvents.TxDone = OnTxDone;
     RadioEvents.TxTimeout = OnTxTimeout;
     Radio.Init(&RadioEvents);
 
     Radio.SetChannel(RF_FREQUENCY);
 
+    Radio.SetRxConfig(MODEM_LORA, LORA_BANDWIDTH, LORA_SPREADING_FACTOR,
+                   LORA_CODINGRATE, 0, LORA_PREAMBLE_LENGTH,
+                   LORA_SYMBOL_TIMEOUT, LORA_FIX_LENGTH_PAYLOAD_ON,
+                   0, true, 0, 0, LORA_IQ_INVERSION_ON, true);
     Radio.SetTxConfig(MODEM_LORA, TX_OUTPUT_POWER, 0, LORA_BANDWIDTH,
                       LORA_SPREADING_FACTOR, LORA_CODINGRATE,
                       LORA_PREAMBLE_LENGTH, LORA_FIX_LENGTH_PAYLOAD_ON,
                       true, 0, 0, LORA_IQ_INVERSION_ON, 3000);
 
     Serial.println("LoRa Sender initialized");
+    lastPinged = millis();
 
     // Print configuration for debugging
     Serial.println("LoRa Sender configuration:");
@@ -189,11 +224,11 @@ void init_LoRa_slave(){
 }
 
 
-
 void setup() {
     Serial.begin(115200);
 
     init_LoRa_slave();
+    lastPinged = millis();
 
     // Initialize pins
     pinMode(LED_BUILTIN, OUTPUT);
@@ -225,25 +260,16 @@ void setup() {
     dht.begin();
     analogSetAttenuation(ADC_11db);
 
-    // Turn off pump initially
     digitalWrite(RELAY_PIN, LOW);
 
     // Handle CORS preflight requests
-    server.on("/led/on", HTTP_OPTIONS, handleCORS);
-    server.on("/led/off", HTTP_OPTIONS, handleCORS);
+    server.on("/led", HTTP_OPTIONS, handleCORS);
+  
+    server.on("/led",HTTP_GET, handleLEDOn);
+    
 
-
-    server.on("/led/on",HTTP_GET, handleLEDOn);
-    server.on("/led/off",HTTP_GET, handleLEDOff);
-
-
-    server.on("/led/on",HTTP_GET, handleLEDOn);
-    server.on("/led/off",HTTP_GET, handleLEDOff);
     server.begin();
 
-
-    // Test RGB LED on startup
-    testRGBLED();
 
     Serial.println("System ready!");
     Serial.println();
@@ -254,11 +280,34 @@ void setup() {
 }
 
 
+void sendDirectlyToServer(char* buffer){
+  HTTPClient http;
+  client.setInsecure(); 
+  const char *host = "https://final-project-mucs.onrender.com";  
+  String path = String(host) + "/send_sensor_data?data=" + buffer;
+
+  http.begin(client, path);
+  http.addHeader("Content-Type", "application/json");
+
+ 
+  int res_code = http.POST("");
+  if(res_code > 0){
+    String res = http.getString();
+    Serial.println("Server response: " + res);
+  }else{
+    Serial.println("Error sending to server: " + String(res_code));
+  }
+  http.end();
+}
+
 void handle_ms_communication(){
     Radio.IrqProcess();
 
     char buffer[30];
-    sprintf(buffer, "hello %d", counter);
+    //sprintf(buffer, "hello %d", counter);
+    sprintf(buffer, "%0.2f/%0.2f/%d/%llu", temperature, humidity, lightLevel, MacId);
+
+    
 
     Serial.print("Attempting to send: ");
     Serial.println(buffer);
@@ -271,14 +320,21 @@ void handle_ms_communication(){
     factory_display.drawString(10, 55, "Sending...");
     factory_display.display();
 
+    unsigned long startTime = millis();
+  
+    if(startTime - lastPinged >= HEARBEAT_VALIDITY ){
+      sendDirectlyToServer(buffer);
+      return;
+    }
+
     // Ensure radio is in standby before sending
     Radio.Standby();
     delay(10);
 
+
     // Send the message
     Radio.Send((uint8_t *)buffer, strlen(buffer));
 
-    unsigned long startTime = millis();
     bool softwareTimeoutOccurred = false;
 
     // Wait for transmission to complete
@@ -344,7 +400,7 @@ void loop() {
     // Handle automatic watering
     handleWatering(currentTime);
 
-    delay(100); // Small delay for system stability
+    delay(15000); // 15 seconds
 }
 
 void readSensors() {
@@ -568,17 +624,6 @@ void setRGBColor(bool red, bool green, bool blue) {
     digitalWrite(RED_PIN, red ? LOW : HIGH);
     digitalWrite(GREEN_PIN, green ? LOW : HIGH);
     digitalWrite(BLUE_PIN, blue ? LOW : HIGH);
-}
-
-// RGB LED test function during startup
-void testRGBLED() {
-    Serial.println("Testing RGB LED on startup...");
-
-    Serial.println("Red");
-    setRGBColor(true, false, false);
-    delay(800);
-
-
 }
 
 // Function to manually trigger watering via serial

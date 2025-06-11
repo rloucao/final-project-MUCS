@@ -130,7 +130,6 @@ def update_plant_status(mac_id, status):
     except Exception as e:
         logger.error(f"Error updating plant status: {str(e)}")
 
-
 @app.route('/send_sensor_data', methods=['POST'])
 def receive_data():
     data = request.args.get('data')

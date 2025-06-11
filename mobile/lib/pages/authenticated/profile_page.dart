@@ -250,7 +250,7 @@ class _ProfilePageState extends State<ProfilePage> {
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.green.shade800,
-            ),
+            ), 
           ),
 
           SizedBox(height: 40),

@@ -2,7 +2,7 @@
 - This is the file that handles:
  - Communication with the App
  - Communication with the server
- - Communication with the LoRa (only receiving)
+ - Communication with the LoRa 
 */
 
 #include <WiFi.h>
@@ -16,8 +16,12 @@
 #include "AES.h"
 #include "Crypto.h"
 
-const char* ssid = "Vodafone-18E4A0";
-const char* pwd = "hZ7qDeqy9Y";
+//const char* ssid = "Vodafone-18E4A0";
+//const char* pwd = "hZ7qDeqy9Y";
+const char* ssid = "Galaxy21";
+const char* pwd = "mynet12345";
+
+
 #define LORA_FREQUENCY 868000000  
 #define TX_OUTPUT_POWER 14     
 #define LORA_BANDWIDTH 0       
@@ -29,7 +33,7 @@ const char* pwd = "hZ7qDeqy9Y";
 #define LORA_IQ_INVERSION_ON false
 
 #define BUFFER_SIZE 16  
-#define HEARTBEAT_INTERVAL 7200000UL
+#define HEARTBEAT_INTERVAL 7200000UL // 2 hours
 
 IPAddress serverIP;
 const char *host = "https://final-project-mucs.onrender.com";  
@@ -59,6 +63,8 @@ byte cipherText[BUFFER_SIZE];
 byte decryptText[BUFFER_SIZE];
 byte plaintext[BUFFER_SIZE];
 
+bool heartbeatInProgress = false;
+unsigned long lastHeartbeat =0;
 
 void send_heartbeat_ping(){
   if (heartbeatInProgress) {
@@ -104,6 +110,7 @@ void send_heartbeat_ping(){
   
   txDoneFlag = false;
   heartbeatInProgress = false;
+  lastHeartbeat = millis();
   
   delay(100);
   Radio.Rx(0);
@@ -267,7 +274,7 @@ void send_sensor_data_to_server(){
   encryptData(buffer, encryptedData, messageLength);
 
   client.setInsecure(); 
-  String path = String(host) + "/send_sensor_data?data=" + encryptedData;
+  String path = String(host) + "/send_sensor_data?data=" + data;
   
   Serial.println("Sending to server: " + data);
 
@@ -399,22 +406,17 @@ void loop() {
     Radio.Rx(0);
   }
 
-  if(millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
-    lastHeartbeat = millis();
-    send_heartbeat_ping();
-  }
-
 
   static unsigned long lastHeartBeat = 0;
   if(millis() - lastHeartBeat > 10000){
     lastHeartBeat = millis();
-    hearbeat_ping();
+    send_heartbeat_ping();
     if(!receivedFlag) { 
       factory_display.clear();
       factory_display.drawString(0, 0, "LoRa Master");
-      factory_display.drawString(0, 20, "Listening...");
-      factory_display.drawString(0, 40, "Packets: " + String(packetCount));
-      factory_display.drawString(0, 55, "IP: " + WiFi.localIP().toString());
+      factory_display.drawString(0, 10, "Listening...");
+      factory_display.drawString(0, 30, "Packets: " + String(packetCount));
+      factory_display.drawString(0, 40, "IP: " + WiFi.localIP().toString());
       factory_display.display();
     }
     
